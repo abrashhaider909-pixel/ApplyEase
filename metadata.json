@@ -1,0 +1,6 @@
+{
+  "name": "ApplyEase",
+  "description": "University Administrative Workflow Automation Platform with Dynamic Form Builder, Visual Document Designer, and Authentic Signature & Stamp Management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

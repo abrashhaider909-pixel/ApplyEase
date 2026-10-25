@@ -1,0 +1,1213 @@
+# MASTER DEVELOPMENT PROMPT — ApplyEase
+## University Application Workflow Automation Platform
+
+Act as a senior full-stack software architect, senior Next.js engineer, Supabase specialist, database designer, UI/UX designer, application security engineer, and QA engineer.
+
+Build **ApplyEase**, a complete, production-oriented, full-stack university application management and workflow automation platform. The platform will digitize university administrative processes, eliminate unnecessary paperwork, automate approval workflows, enable electronic signing and stamping, track application progress in real time, and hold responsible staff accountable for missed processing deadlines.
+
+Do not build a static prototype, a collection of disconnected dashboard screens, or a frontend-only demonstration. Build a functional application with persistent database storage, secure authentication, real authorization, working forms, real workflow transitions, file uploads, notifications, audit trails, and end-to-end application processing.
+
+When a feature depends on external credentials or a paid provider, implement the appropriate integration boundary and a working development alternative. Never represent a simulated operation as a completed real-world action.
+
+---
+
+# 1. Product Identity and Brand
+
+**Product name:** ApplyEase
+
+**Product category:** University Administrative Workflow Automation System
+
+**Brand promise:** Apply. Track. Approve. Simplify.
+
+Use the uploaded ApplyEase logo as the primary brand identity. Preserve its recognizable navy geometric letterform and orange checkmark. Do not replace it with a generic icon or an unrelated logo.
+
+Create a coherent visual system:
+- Primary navy: approximately `#172B50`.
+- Accent orange: approximately `#F4772E`.
+- White and subtle neutral gray backgrounds.
+- Dark, high-contrast text.
+- Restrained borders, shadows, and gradients.
+- Consistent typography, spacing, radii, and iconography.
+- Use professional SVG or Lucide icons rather than emoji.
+- Use the logo in the login page, application shell, sidebar, loading screen, and generated application documents where appropriate.
+
+The interface should feel like a polished enterprise SaaS product designed for a modern university. Avoid generic AI-generated layouts, excessive gradients, unnecessary cards, oversized headings, and decorative elements that reduce information density.
+
+Support responsive desktop, tablet, and mobile layouts. Administrative and staff interfaces should prioritize desktop productivity, while student workflows must remain straightforward on mobile.
+
+---
+
+# 2. Technology Stack
+
+Use the following stack unless a documented technical constraint requires an alternative.
+
+### Frontend and application framework
+- Next.js using the App Router.
+- React and TypeScript with strict type checking.
+- Tailwind CSS.
+- shadcn/ui for accessible interface components.
+- Lucide React for icons.
+- React Hook Form and Zod for form handling and validation.
+- TanStack Table for data-heavy administrative tables where useful.
+- A suitable charting library for analytics.
+
+### Backend and data
+- Supabase PostgreSQL as the primary database.
+- Supabase Auth for identity and session management.
+- Supabase Storage for private document uploads and generated files.
+- Supabase Realtime for appropriate live status updates.
+- PostgreSQL Row Level Security (RLS) for authorization.
+- Server-side Next.js route handlers or server actions for trusted operations.
+- Database migrations and version-controlled SQL.
+
+Use the official Supabase client patterns appropriate to the current versions of Next.js and Supabase.
+
+### Engineering requirements
+- TypeScript throughout the application.
+- Reusable components and domain-oriented modules.
+- Environment variables for all secrets and provider credentials.
+- Server-side validation of every sensitive operation.
+- Secure session handling and server-side authorization.
+- Automated unit, integration, and end-to-end tests.
+- ESLint or the project's configured linting tools.
+- Clear installation, configuration, deployment, and maintenance documentation.
+
+Do not introduce an unnecessary microservice architecture. Start with a well-structured modular monolith.
+
+---
+
+# 3. User Roles and Permissions
+
+Implement three principal roles with strictly separated permissions.
+
+## A. Student
+
+Students can:
+- Sign in using their university-issued email and password.
+- Access only their own profile, applications, documents, notifications, and generated decisions.
+- Browse application types currently available to them.
+- Create, save, edit, and submit applications according to the workflow rules.
+- Upload required documents.
+- View fees, fines, payment instructions, and payment verification status.
+- Track the entire application timeline.
+- See the current responsible department or staff role where disclosure is permitted.
+- View estimated processing time and applicable deadlines.
+- Receive notifications when an application advances, is returned, is rejected, or requires action.
+- Download completed applications and official documents.
+- Review approval signatures and stamps attached to issued documents.
+- Request clarification or respond to a returned application.
+- Withdraw a draft or request cancellation where policy permits.
+
+Students must never access another student's records by changing an application ID, URL, query parameter, or API request.
+
+## B. Staff
+
+Each staff member receives an account created or provisioned by an authorized administrator.
+
+Staff can:
+- Sign in securely using their assigned university email and password.
+- View a personalized staff dashboard.
+- View only applications assigned to them or their authorized department.
+- See pending verification tasks, signature requests, overdue tasks, completed tasks, and upcoming deadlines.
+- Open an application and inspect permitted fields and uploaded documents.
+- Verify or reject documents with a mandatory explanation when rejection is appropriate.
+- Approve or reject a stage when their permissions allow it.
+- Request corrections from a student.
+- Apply an authorized electronic signature or official stamp.
+- Forward an application to the next configured workflow stage.
+- View the full history of actions taken on an application.
+- Record an internal processing note when authorized.
+- See their task turnaround time and overdue assignments.
+
+Staff must not create administrator accounts, modify workflow definitions, assign themselves unrestricted permissions, or access unrelated departments' applications.
+
+An action such as "Verify" must actually execute the corresponding server-side transition, persist the result, generate an audit event, notify relevant users, and update the application timeline.
+
+## C. Administrator
+
+The administrator manages the entire university workspace and has the highest application-level privileges.
+
+Administrator capabilities include:
+- Overview dashboard and analytics.
+- Student and staff account management.
+- Staff invitation, credential provisioning, activation, suspension, and password reset.
+- Department and designation management.
+- Application type and template management.
+- Workflow creation, editing, publishing, versioning, and retirement.
+- Workflow stage configuration and ordering.
+- Staff, department, and role assignment for each stage.
+- Document requirement configuration.
+- Fee and fine rules.
+- Deadline and escalation policy configuration.
+- Electronic signature and stamp asset management.
+- Application monitoring and controlled reassignment.
+- Notification templates and delivery settings.
+- Audit log access.
+- Reports, export, and operational analytics.
+- University branding and organization settings.
+
+The administrator must be able to configure the system without modifying application source code.
+
+Administrator privileges must still be enforced server-side. Avoid unrestricted access based only on hidden UI controls.
+
+---
+
+# 4. Authentication and Account Provisioning
+
+Build a secure authentication experience with separate student and staff/admin entry points where appropriate.
+
+### Student authentication
+- University-issued email and password.
+- Email verification or trusted university identity verification as configured.
+- Optional institutional SSO integration point.
+- Password reset.
+- Session expiration and secure logout.
+- Profile setup on first login where needed.
+
+### Staff authentication
+- Accounts provisioned by the administrator.
+- Invitation-based account activation or secure temporary-password setup.
+- Mandatory password change after first login when temporary credentials are used.
+- Password reset and account suspension.
+- Role and department assignment.
+- Optional MFA support.
+
+### Administrator bootstrap
+
+Support initial administrator provisioning through a secure server-side seed script or controlled setup procedure.
+
+The supplied initial administrator email and password are development bootstrap inputs only. Never embed these credentials in frontend source, public environment variables, SQL migration text, client-side bundles, or repository documentation.
+
+Read bootstrap credentials from server-only environment variables, hash or securely manage passwords through Supabase Auth, and require the administrator to replace the initial password before normal operation.
+
+Do not create a public registration route that allows anyone to become staff or an administrator.
+
+### Authorization
+
+Implement explicit permission checks for every protected action. Validate the authenticated user, their active account, role, department, and applicable resource access before executing an operation.
+
+Use Supabase RLS as a second layer of protection, not as a substitute for sound server-side authorization.
+
+---
+
+# 5. Student Dashboard
+
+Create a personalized dashboard that answers three questions immediately:
+
+1. What applications have I submitted?
+2. What is happening to each application right now?
+3. What do I need to do next?
+
+Include:
+- Welcome section.
+- "Create Application" primary action.
+- Total applications.
+- Pending applications.
+- Applications requiring student action.
+- Completed applications.
+- Rejected or cancelled applications where relevant.
+- Recent activity.
+- Notifications and reminders.
+- Search and filters.
+- Application cards or a compact data table depending on screen size.
+
+Each application entry should display:
+- Unique application reference number.
+- Application type.
+- Submission date.
+- Current workflow stage.
+- Current status.
+- Responsible department or role.
+- Expected completion date or estimated remaining time.
+- Most recent update.
+- A clear "Track Application" action.
+
+Use clear status labels, such as:
+- Draft
+- Submitted
+- Under Verification
+- Awaiting Payment
+- Awaiting Student Action
+- Pending Approval
+- Pending Signature
+- Overdue
+- Completed
+- Rejected
+- Cancelled
+
+Do not confuse the overall application status with the status of an individual workflow stage.
+
+---
+
+# 6. Application Creation and Templates
+
+When a student selects "Create Application", present an application-type catalogue.
+
+Initial application types must include:
+
+1. Leave Application.
+2. Mess Out / Mess Exemption Application.
+3. Document Withdrawal or Collection.
+4. Library Card Request.
+5. Bonafide or Student Status Certificate.
+6. Fee-Related Request.
+7. General Administrative Request.
+
+Administrators must be able to add, edit, deactivate, and configure application types.
+
+Each application type must have a configurable template containing:
+- Display name and description.
+- Eligibility rules.
+- Dynamic form fields.
+- Required and optional fields.
+- Validation rules.
+- Conditional questions.
+- Required document types.
+- Fee or fine rules.
+- Workflow definition.
+- Expected stage duration.
+- Student-visible instructions.
+- Approval and rejection policies.
+- Generated document template.
+- Version and publication status.
+
+Build a form renderer driven by saved template definitions rather than hardcoding a separate form component for every application type.
+
+Support field types such as:
+- Short text.
+- Long text.
+- Date.
+- Date range.
+- Select.
+- Multi-select.
+- Number.
+- Boolean.
+- File upload.
+- Read-only computed value.
+- Payment reference.
+
+Validate dynamic form data on both the client and server.
+
+### Example: Leave application
+
+Fields might include:
+- Student identity, populated from the authenticated profile.
+- Leave start date.
+- Leave end date.
+- Destination.
+- Reason.
+- Contact number.
+- Supporting document if required.
+
+### Example: Document withdrawal
+
+Fields might include:
+- Document type.
+- Purpose.
+- Whether the document is an original or certified copy.
+- Collection method.
+- Supporting authorization where necessary.
+
+### Example: Mess out
+
+Fields might include:
+- Requested start and end dates.
+- Reason.
+- Residence or hostel details.
+- Required supporting evidence.
+- Applicable mess clearance or fee conditions.
+
+Do not assume every university has the same policies. All institution-specific fields and approval requirements must be configurable.
+
+---
+
+# 7. Document Uploads and Validation
+
+Build a secure document management system.
+
+Requirements:
+- Private Supabase Storage buckets.
+- File type and size restrictions.
+- Server-side validation.
+- Unique object paths that prevent collisions.
+- Metadata linked to the application and document requirement.
+- Upload progress and useful error messages.
+- Document preview where supported.
+- Secure downloads using short-lived signed URLs.
+- Versioning or replacement history where appropriate.
+- Staff verification status.
+- Mandatory rejection reason or correction instructions.
+- Configurable document retention and deletion policies.
+
+Never make sensitive application documents publicly accessible.
+
+Prevent path traversal, unauthorized object access, spoofed file types, and direct access to other students' documents. Consider malware scanning before accepting uploaded files into official processing workflows.
+
+---
+
+# 8. Workflow Builder — Core Administrative Feature
+
+The workflow builder is the heart of ApplyEase.
+
+Build a dedicated administrator interface where an administrator can create a workflow visually, preferably with an ordered stage editor or node-based builder if that materially improves usability.
+
+Each workflow definition should contain:
+- Workflow name.
+- Associated application type.
+- Description.
+- Draft or published status.
+- Version number.
+- Ordered stages.
+- Stage owner.
+- Assigned department or staff role.
+- Allowed actions.
+- Required documents.
+- Payment prerequisites.
+- Electronic signature or stamp requirements.
+- SLA duration.
+- Escalation policy.
+- Conditional branching rules where needed.
+- Completion and rejection destinations.
+
+### Example workflow: Leave application
+
+Stage 1 — Student Submission
+- Student completes the form and uploads required evidence.
+- System validates required fields.
+- Application is submitted and assigned a reference number.
+
+Stage 2 — Faculty Verification
+- Assigned faculty member checks the request.
+- Faculty may approve, reject, or request corrections if permitted.
+- The decision and any comments are recorded.
+
+Stage 3 — Department Approval
+- Authorized department representative reviews the request.
+- The stage is completed only after a valid approval action.
+
+Stage 4 — Hostel/Warden Approval
+- Applies when required by the university's policy.
+- Assignment and conditions are configurable.
+
+Stage 5 — Final Authorization
+- Authorized approver signs the generated document where required.
+
+Stage 6 — Issuance
+- System generates the final document.
+- The completed document becomes available to the student.
+- The student receives a notification.
+
+This is an example, not a universal fixed workflow. The administrator must be able to add, remove, reorder, rename, configure, or conditionally skip stages according to permissions and policy.
+
+### Workflow engine rules
+
+- Published workflow versions must be immutable for existing applications.
+- Applications must retain the exact workflow version under which they were submitted.
+- New workflow versions apply to new submissions by default.
+- Any migration of existing applications must be explicit, authorized, and audited.
+- A stage can advance only when its required conditions are satisfied.
+- Duplicate submissions and double approvals must be prevented.
+- Stage transitions must be atomic and transaction-safe.
+- Rejections and correction requests must follow defined transition rules.
+- Workflow changes must not erase historical approval records.
+- Concurrent actions by multiple staff members must not corrupt application state.
+
+Implement transitions through trusted server-side operations and database transactions or carefully designed PostgreSQL functions.
+
+---
+
+# 9. Real-Time Application Tracking and Timeline
+
+Every application must have a detailed, chronological timeline.
+
+For example:
+
+- 09:15 — Application submitted.
+- 09:16 — Assigned to Faculty Verification.
+- 11:30 — Faculty opened the application, if activity tracking is enabled and disclosed.
+- 13:10 — Supporting document verified.
+- 14:00 — Forwarded to Department Approval.
+- Next day — Department approval overdue.
+- 10:00 — Approval completed.
+- 10:05 — Final document generated.
+
+Every timeline event should store the actual event timestamp and relevant actor or system identity.
+
+Display:
+- Completed stages.
+- Current stage.
+- Pending stages.
+- Responsible staff role or department.
+- Stage start time.
+- Stage deadline.
+- Time elapsed.
+- Time remaining or time overdue.
+- Current blockers.
+- Required student action.
+- Latest comments or decisions visible to that student.
+
+Use Supabase Realtime for suitable live updates, with reliable database reads as the source of truth.
+
+Do not fabricate progress events or display a stage as completed before the corresponding transition is committed.
+
+---
+
+# 10. Estimated Processing Time and SLA Management
+
+Implement a transparent processing-time estimator.
+
+Each workflow stage must have a configurable target duration. Support durations in business hours or business days, depending on university policy.
+
+Account for:
+- University working hours.
+- Weekends.
+- Configured public holidays.
+- Paused stages awaiting student action.
+- Payment verification delays.
+- Stage dependencies.
+- Reopened applications.
+- Reassignment.
+- Actual historical turnaround times where sufficient data exists.
+
+Display both:
+1. **Target deadline:** the formal deadline based on the university's policy.
+2. **Estimated completion:** the best current estimate based on remaining stages and available historical data.
+
+Clearly label estimates as estimates, not guarantees.
+
+If historical data is insufficient, use the configured SLA rather than inventing predictive accuracy.
+
+Show students why a delay exists when disclosure is appropriate, such as missing documents or pending approval.
+
+---
+
+# 11. Automated Reminders and Escalation Engine
+
+Build a reliable deadline monitoring and escalation system.
+
+Do not rely on a browser tab remaining open, a React timer, or an in-memory background process.
+
+Use a scheduled server-side job, Supabase Cron, or another reliable scheduler that invokes an authenticated backend operation.
+
+For each pending stage:
+
+1. Calculate the actual deadline using the applicable calendar and SLA.
+2. Determine whether the stage is approaching its deadline or has become overdue.
+3. Send the appropriate notification.
+4. Persist the reminder event.
+5. Avoid duplicate reminders for the same escalation interval.
+6. Record delivery attempts and failures.
+7. Escalate to the next authorized level according to the configured policy.
+
+### Example three-warning policy
+
+- **Warning 1:** Notify the assigned staff member when the configured overdue threshold is reached.
+- **Warning 2:** Send a follow-up after the next configured interval if the stage remains incomplete.
+- **Warning 3:** Send a final warning to the assigned staff member and then escalate the case to the designated administrator if it remains unresolved.
+
+The exact thresholds must be configurable per workflow and stage.
+
+An escalation must not automatically conclude that a staff member is negligent. It should record an objective missed SLA and flag the case for administrative review.
+
+Prevent repeated scheduler executions from sending duplicate notifications or escalating the same stage multiple times.
+
+Allow administrators to configure escalation recipients, intervals, notification channels, and exceptions.
+
+Support:
+- In-app notifications.
+- Email notifications through a configurable email provider.
+- Optional institutional email integration.
+
+Record timestamps, recipients, notification types, delivery status, and escalation history.
+
+A staff member must not be able to dismiss an overdue notification merely to reset the SLA clock. SLA adjustments must be permission-controlled and audited.
+
+---
+
+# 12. Staff Dashboard
+
+Create a focused dashboard for each staff member.
+
+### Summary metrics
+- Pending assignments.
+- Awaiting document verification.
+- Awaiting approval.
+- Awaiting signature.
+- Due soon.
+- Overdue.
+- Completed today.
+- Average processing time where statistically meaningful.
+
+### Task queue
+Display:
+- Application reference.
+- Application type.
+- Student identifier according to privacy policy.
+- Current stage.
+- Submission or assignment date.
+- SLA deadline.
+- Time remaining or overdue duration.
+- Required action.
+- Priority derived from policy.
+
+Provide filters for:
+- Application type.
+- Department.
+- Stage.
+- Status.
+- Deadline.
+- Overdue state.
+
+### Application review interface
+
+Use a split-pane or similarly efficient layout:
+- Application details.
+- Submitted form.
+- Document preview.
+- Validation checklist.
+- Workflow timeline.
+- Internal notes.
+- Decision controls.
+
+Actions should be explicit:
+- Verify Document.
+- Approve Stage.
+- Reject with Reason.
+- Request Correction.
+- Sign Document.
+- Apply Authorized Stamp.
+- Forward to Next Stage.
+
+Require confirmation for consequential actions and explanations for applicable rejections.
+
+Prevent unauthorized self-approval, bypassing of mandatory stages, or repeated signing of the same approval event.
+
+---
+
+# 13. Electronic Signatures and Official Stamps
+
+Implement a secure approval and document issuance system.
+
+Distinguish clearly between:
+- A drawn signature image.
+- An electronic approval event.
+- A cryptographically verifiable digital signature.
+- An official institutional seal or stamp image.
+
+Do not claim that inserting an image creates a legally valid digital signature.
+
+### Signature management
+
+Administrators can:
+- Upload approved signature assets.
+- Associate an asset with a specific authorized person or role.
+- Configure which workflow stages require a signature.
+- Set activation and revocation status.
+- Control who may apply a signature.
+- Review signature usage and audit history.
+
+Staff must authenticate and explicitly authorize their own signing actions. Do not allow an administrator to silently impersonate a staff member or apply that person's signature without a documented, policy-authorized process.
+
+### Stamp management
+
+Administrators can manage official stamp assets with:
+- Name and type.
+- Image file.
+- Authorized department.
+- Usage permissions.
+- Activation status.
+- Validity period where applicable.
+- Audit history.
+
+Restrict stamps to authorized workflow stages.
+
+### Generated documents
+
+Generate a finalized PDF that can contain:
+- University branding.
+- Application reference number.
+- Student and request details.
+- Approval dates.
+- Authorized signatures.
+- Approved stamps.
+- Verification reference or QR code where appropriate.
+- Document issue date.
+- Verification instructions.
+
+Preserve the exact approved document version.
+
+Record a cryptographic hash of the issued PDF, the approval events associated with it, and the identities and timestamps of the authorized actions.
+
+If actual cryptographic signing or trusted timestamping is required, integrate an appropriate signing provider or PKI-based service. Do not represent a hash or signature image alone as a complete PKI signature.
+
+Generated files must be stored privately and made available only through authorized access.
+
+---
+
+# 14. Administrator Dashboard and Analytics
+
+Design an information-dense, executive-level administrative dashboard.
+
+### Overview metrics
+- Total applications submitted.
+- Applications in progress.
+- Completed applications.
+- Rejected applications.
+- Overdue applications.
+- Applications awaiting student action.
+- Average end-to-end processing time.
+- Percentage completed within SLA.
+- Current staff workload.
+- Escalated stages.
+- Daily, weekly, and monthly submission volumes.
+
+### Charts and reports
+- Applications over time.
+- Applications by type.
+- Applications by department.
+- Current status distribution.
+- Stage-by-stage processing time.
+- SLA compliance trends.
+- Workload by staff member.
+- Overdue and escalation trends.
+- Approval and rejection patterns.
+
+### Staff efficiency
+
+Measure performance using transparent, contextual metrics:
+- Median and average handling time.
+- Completed assignments.
+- Number and proportion of overdue assignments.
+- SLA compliance rate.
+- Workload and assignment complexity.
+
+Account for case volume, complexity, assignment changes, and time spent waiting on students or other departments. Do not rank staff solely by raw approval counts or treat a delayed case as proof of misconduct.
+
+### Administrative controls
+
+Provide dedicated sections for:
+- Users.
+- Departments.
+- Application Types.
+- Workflow Builder.
+- Workflow Versions.
+- Staff Assignments.
+- Documents and Templates.
+- Fees and Payments.
+- Signatures and Stamps.
+- Notifications.
+- SLA and Escalation Policies.
+- Reports.
+- Audit Logs.
+- System Settings.
+
+Include search, pagination, filters, confirmation dialogs, loading states, empty states, and actionable error messages.
+
+---
+
+# 15. Fees, Fines, and Payment Verification
+
+Applications may require a fine, fee, clearance, or payment reference before proceeding.
+
+Implement configurable payment requirements:
+- No payment required.
+- Payment required before submission.
+- Payment required before a particular stage.
+- Payment required before final issuance.
+
+Store:
+- Fee type.
+- Amount and currency.
+- Related application.
+- Payment status.
+- Payment reference.
+- Submission and verification timestamps.
+- Authorized verifier.
+- Supporting receipt where permitted.
+
+Possible statuses:
+- Not Required.
+- Pending.
+- Receipt Submitted.
+- Awaiting Verification.
+- Verified.
+- Rejected.
+- Refunded, where supported.
+
+For the initial version, support manual receipt submission and authorized staff verification if a real payment gateway is not configured.
+
+Never mark a payment as completed merely because a student uploaded a receipt.
+
+If a payment gateway is integrated later, verify payment through trusted provider webhooks and server-side checks. Never collect or store card details directly unless the application is specifically designed and certified to handle them.
+
+---
+
+# 16. Notifications and Communication
+
+Build a persistent notification system.
+
+Trigger notifications for:
+- Application submission.
+- Assignment to a stage.
+- Stage approval.
+- Document verification.
+- Missing or invalid documents.
+- Payment requirements.
+- Correction requests.
+- Rejection.
+- Approaching deadlines.
+- Overdue stages.
+- Each escalation level.
+- Final approval.
+- Document issuance.
+- Administrative reassignment.
+
+Each notification should include:
+- Event type.
+- Recipient.
+- Related application.
+- Timestamp.
+- Read/unread status.
+- Delivery channel.
+- Delivery state.
+- A secure link to the relevant application.
+
+Support configurable email templates with university branding.
+
+Avoid including sensitive student information or private document links directly in notification messages.
+
+---
+
+# 17. Database Architecture
+
+Design a normalized PostgreSQL schema with explicit foreign keys, indexes, constraints, and appropriate RLS policies.
+
+Consider the following entities and add others when necessary:
+
+- `organizations`
+- `profiles`
+- `user_roles` or an appropriately constrained role model
+- `departments`
+- `department_memberships`
+- `application_types`
+- `application_templates`
+- `template_versions`
+- `workflow_definitions`
+- `workflow_versions`
+- `workflow_stages`
+- `workflow_stage_assignments`
+- `applications`
+- `application_form_data`
+- `application_stage_instances`
+- `application_assignments`
+- `application_documents`
+- `document_requirements`
+- `document_reviews`
+- `payment_requirements`
+- `payment_records`
+- `approval_events`
+- `signature_assets`
+- `stamp_assets`
+- `signed_document_records`
+- `generated_documents`
+- `application_timeline_events`
+- `stage_sla_policies`
+- `escalation_policies`
+- `escalation_events`
+- `notifications`
+- `notification_deliveries`
+- `audit_logs`
+- `university_calendar`
+- `system_settings`
+
+Requirements:
+- UUID primary keys where appropriate.
+- `created_at` and `updated_at` timestamps.
+- Referential integrity.
+- Unique application reference numbers.
+- Explicit status constraints.
+- Useful indexes for dashboards and queues.
+- Immutable or append-only records for critical approval and audit events.
+- Safe handling of workflow version references.
+- Database constraints for invalid states.
+- Transaction-safe state transitions.
+
+Use JSONB for genuinely dynamic application form data and carefully versioned template configuration, not as an excuse to store the entire relational model in one JSON document.
+
+If this platform may later support multiple universities, include organization-scoped data access from the beginning. A user's organization and permissions must be derived from trusted server-side records, never from a client-submitted organization ID alone.
+
+---
+
+# 18. Security, Privacy, and Auditability
+
+Treat university applications as confidential personal records.
+
+Implement:
+- Least-privilege authorization.
+- Supabase RLS policies.
+- Private storage and signed URLs.
+- Server-side input validation.
+- Safe output rendering.
+- Rate limiting for sensitive operations.
+- Protection against IDOR, privilege escalation, and mass assignment.
+- Secure password recovery.
+- CSRF protections where applicable to the authentication and request architecture.
+- Secret management.
+- Safe logging without passwords, access tokens, or sensitive document contents.
+- Session and account revocation.
+- Restricted administrative actions.
+- Backup and recovery documentation.
+- Configurable data retention.
+- Explicit authorization before exporting bulk student data.
+
+Create an audit log for important events, including:
+- Authentication and account management events where appropriate.
+- Application creation and submission.
+- Document uploads and verification.
+- Workflow transitions.
+- Approvals and rejections.
+- Signatures and stamp usage.
+- Reassignments.
+- SLA changes.
+- Escalations.
+- Administrator configuration changes.
+- Document issuance and revocation.
+
+Audit entries should record the actor, event type, affected resource, timestamp, and relevant before/after metadata without unnecessarily copying sensitive document contents.
+
+Do not expose service-role credentials to the browser. Never trust a role, user ID, stage ID, or approval permission merely because the client supplied it.
+
+---
+
+# 19. User Interface and Experience Standards
+
+Implement a consistent application shell for each role.
+
+### Shared elements
+- Branded sidebar or responsive navigation.
+- Clear page titles and contextual actions.
+- Breadcrumbs for deep administrative screens.
+- Notification center.
+- Profile and account controls.
+- Accessible dialogs and forms.
+- Consistent buttons, inputs, tables, status indicators, and toasts.
+
+### Student experience
+Simple, guided, and transparent. Minimize administrative jargon and unnecessary form fields.
+
+### Staff experience
+Fast, task-oriented, and optimized for reviewing many applications without repeatedly navigating between pages.
+
+### Administrator experience
+Configurable, data-rich, and auditable, with clear separation between configuration, monitoring, and account management.
+
+### Quality requirements
+- Responsive layouts.
+- Keyboard navigation.
+- Accessible labels and focus states.
+- Appropriate contrast.
+- Loading skeletons where useful.
+- Helpful empty states.
+- Clear validation errors.
+- Confirmation before destructive actions.
+- No dead buttons.
+- No fake data presented as live production information.
+- No horizontal overflow on common mobile widths.
+- No inaccessible text embedded in images.
+
+Use realistic seed data only in development and clearly identify it as demonstration data.
+
+---
+
+# 20. Suggested Application Structure
+
+Use a modular App Router structure similar to:
+
+```text
+src/
+  app/
+    (auth)/
+      login/
+      forgot-password/
+      reset-password/
+    (student)/
+      student/
+        dashboard/
+        applications/
+        applications/new/
+        applications/[applicationId]/
+        documents/
+        notifications/
+        profile/
+    (staff)/
+      staff/
+        dashboard/
+        tasks/
+        applications/[applicationId]/
+        notifications/
+        profile/
+    (admin)/
+      admin/
+        dashboard/
+        users/
+        departments/
+        application-types/
+        workflows/
+        workflows/[workflowId]/
+        assignments/
+        documents/
+        payments/
+        signatures/
+        stamps/
+        sla-policies/
+        escalations/
+        reports/
+        audit-logs/
+        settings/
+    api/
+  components/
+    ui/
+    layout/
+    applications/
+    workflows/
+    documents/
+    notifications/
+    analytics/
+  lib/
+    supabase/
+    auth/
+    permissions/
+    validation/
+    workflows/
+    sla/
+    notifications/
+    documents/
+    pdf/
+    audit/
+  types/
+  config/
+
+supabase/
+  migrations/
+  seed.sql
+  functions/
+
+tests/
+  unit/
+  integration/
+  e2e/
+```
+
+This is a suggested structure, not a rigid requirement. Organize modules so workflow rules, authorization, and business logic are testable independently of React components.
+
+---
+
+# 21. Implementation Sequence
+
+Build the application in deliberate phases. Each phase must leave the project runnable.
+
+### Phase 1 — Foundation
+- Initialize Next.js and TypeScript.
+- Install and configure required UI libraries.
+- Configure environment variables.
+- Integrate the ApplyEase logo and brand system.
+- Establish the Supabase client architecture.
+- Create the base layouts and authentication screens.
+- Configure linting, formatting, and testing.
+
+### Phase 2 — Database and authentication
+- Write SQL migrations.
+- Create tables, foreign keys, indexes, and constraints.
+- Configure Supabase Auth.
+- Implement role and organization provisioning.
+- Create RLS policies.
+- Add a secure development seed procedure.
+- Test unauthorized access.
+
+### Phase 3 — Student functionality
+- Student dashboard.
+- Application catalogue.
+- Dynamic application forms.
+- Document uploads.
+- Draft saving and submission.
+- Application reference generation.
+- Application timeline.
+
+### Phase 4 — Workflow engine
+- Workflow definitions and versioning.
+- Stage assignments.
+- Server-side transition validation.
+- Approval and rejection actions.
+- Correction requests.
+- Atomic state changes.
+- Timeline and audit events.
+
+### Phase 5 — Staff functionality
+- Staff dashboard.
+- Assigned task queue.
+- Document verification.
+- Approval and rejection.
+- Reassignment rules.
+- Stage completion.
+- Permission enforcement.
+
+### Phase 6 — Administration
+- Administrator dashboard.
+- User and department management.
+- Application type builder.
+- Workflow builder.
+- Staff credentials and assignments.
+- Signature and stamp management.
+- Configurable SLAs and escalation policies.
+
+### Phase 7 — Automation and document issuance
+- Scheduled SLA monitoring.
+- Idempotent reminders and escalations.
+- In-app and email notifications.
+- PDF generation.
+- Authorized signatures and stamps.
+- Secure document storage and downloads.
+- Verification records.
+
+### Phase 8 — Analytics and hardening
+- Dashboard analytics.
+- Operational reports.
+- Accessibility improvements.
+- Performance optimization.
+- Security testing.
+- End-to-end tests.
+- Deployment documentation.
+- Production readiness review.
+
+Do not stop after Phase 1 or Phase 2 and describe the application as complete.
+
+---
+
+# 22. Testing and Acceptance Criteria
+
+The system is not complete until the following end-to-end scenarios work.
+
+### Scenario A: Normal application
+1. A student signs in.
+2. The student creates a leave application.
+3. The student fills out the dynamic form.
+4. The student uploads required documents.
+5. The student submits the application.
+6. The system generates a unique reference number.
+7. The application enters the first configured workflow stage.
+8. The assigned staff member sees the task.
+9. The staff member verifies it and approves the stage.
+10. The application advances to the next stage.
+11. The student sees the updated timeline.
+12. All actions are persisted and audited.
+13. After the final authorized approval, the system generates the final PDF.
+14. The student can securely download the issued document.
+
+### Scenario B: Missing document
+1. The student submits an incomplete application.
+2. Server-side validation prevents invalid submission or the authorized reviewer identifies a deficiency.
+3. The application enters the appropriate correction state.
+4. The student receives a notification explaining what is missing.
+5. The student uploads a replacement.
+6. The document is reviewed.
+7. The application resumes the correct workflow stage without erasing history.
+
+### Scenario C: Missed SLA
+1. A staff assignment receives a deadline.
+2. The scheduled job detects the missed deadline.
+3. The first warning is recorded and sent.
+4. Later warnings occur according to policy.
+5. After the configured third warning, the unresolved assignment is escalated to the designated administrator.
+6. Duplicate job execution does not create duplicate warnings.
+7. The dashboard displays the overdue state and escalation history.
+
+### Scenario D: Unauthorized access
+1. Student A submits an application.
+2. Student B attempts to open Student A's application by changing the URL.
+3. Access is denied by server-side authorization and RLS.
+4. Student B cannot retrieve Student A's documents through direct storage URLs or API calls.
+5. A staff member cannot execute an approval outside their permitted assignments.
+6. An ordinary user cannot grant themselves administrator privileges.
+
+### Scenario E: Workflow changes
+1. The administrator publishes Workflow Version 1.
+2. A student submits an application using Version 1.
+3. The administrator publishes Workflow Version 2.
+4. The existing application continues under Version 1 unless an authorized migration is explicitly performed.
+5. New applications use Version 2.
+
+### Scenario F: Electronic issuance
+1. An authorized approver completes a signature-required stage.
+2. The server validates the approver's authority.
+3. The approval event is recorded.
+4. The required signature and stamp assets are applied according to policy.
+5. The final PDF is generated and its hash recorded.
+6. The student can access the document through authorized download.
+7. The audit trail identifies the actual approver and document version.
+
+---
+
+# 23. Developer Deliverables
+
+Deliver:
+1. Complete working Next.js source code.
+2. Supabase SQL migrations.
+3. RLS policies.
+4. Database seed scripts.
+5. Secure development administrator bootstrap instructions.
+6. Reusable UI components.
+7. Student, staff, and administrator dashboards.
+8. Functional application and workflow forms.
+9. Working server-side workflow transitions.
+10. Secure file upload and download functionality.
+11. SLA scheduling and escalation implementation.
+12. Notification infrastructure.
+13. PDF generation and issuance.
+14. Signature and stamp management.
+15. Automated tests.
+16. `.env.example` containing variable names and safe placeholders only.
+17. README with exact installation and setup commands.
+18. Supabase project setup instructions.
+19. Local development instructions.
+20. Deployment instructions.
+21. A documented list of any external services requiring credentials.
+22. A list of features implemented, tested, simulated, or still pending.
+
+Never place real secrets in `.env.example`, client bundles, or source control.
+
+---
+
+# 24. Working Method for the AI Coding Agent
+
+Before making changes:
+1. Inspect the existing project files and current framework versions.
+2. Identify existing functionality that should be preserved.
+3. Check the package manager and installed dependencies.
+4. Identify missing configuration and external service requirements.
+5. Create a concise implementation plan.
+
+Then begin implementing the actual project.
+
+Rules:
+- If a repository already exists, inspect it before replacing files.
+- Preserve working functionality unless a change is necessary.
+- Do not rewrite the entire application unnecessarily.
+- Use current, compatible APIs rather than deprecated patterns.
+- Do not invent Supabase credentials, provider APIs, or completed integrations.
+- Do not ask the user to paste secrets into chat.
+- Use complete file contents when that makes implementation easier to apply.
+- Explain precisely which files were created or changed.
+- Provide exact terminal commands for Windows PowerShell when setup or debugging requires them.
+- Run the available type checks, linting, and tests.
+- Fix errors introduced by your changes.
+- If an external service is unavailable, implement a clean integration boundary and document the remaining setup.
+- Never claim that code was executed or tested if it was not.
+
+At the end of each implementation phase, report:
+- What is implemented.
+- What is functional.
+- Which tests passed.
+- Which environment variables or setup steps remain.
+- What the next phase will deliver.
+
+**Final objective:** deliver ApplyEase as a secure, maintainable, responsive university workflow automation platform that can be configured by administrators, used by students and staff, and extended to additional application types and university departments without rewriting the core system.
