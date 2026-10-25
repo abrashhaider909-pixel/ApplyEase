@@ -1,6 +1,15 @@
 # EasyApply
 
 EasyApply is a university application workflow platform for students, staff, and administrators.
+## Student DashBoard
+![alt text](<Screenshot 2026-10-25 164401.png>)
+
+## Admin DashBoard
+![alt text](<Screenshot 2026-10-25 202706.png>)
+## Faculty DashBoard
+![alt text](<Screenshot 2026-10-25 202653.png>)
+## Application Work FLow
+ ![alt text](<Screenshot 2026-10-25 164401-1.png>) ![alt text](<Screenshot 2026-10-25 165749.png>) ![alt text](<Screenshot 2026-10-25 170101.png>) ![alt text](<Screenshot 2026-10-25 170113.png>) ![alt text](<Screenshot 2026-10-25 170430.png>) ![alt text](<Screenshot 2026-10-25 170508.png>)![alt text](<Screenshot 2026-10-25 170101-1.png>) ![alt text](<Screenshot 2026-10-25 170113-1.png>) ![alt text](<Screenshot 2026-10-25 170430-1.png>) ![alt text](<Screenshot 2026-10-25 170508-1.png>) ![alt text](<Screenshot 2026-10-25 170600.png>) ![alt text](<Screenshot 2026-10-25 170800.png>) ![alt text](<Screenshot 2026-10-25 170830.png>) ![alt text](<Screenshot 2026-10-25 170858.png>) 
 
 ## Features
 
