@@ -32,7 +32,6 @@ export const FormBuilder: React.FC = () => {
   const [selectedTypeId, setSelectedTypeId] = useState<string>(applicationTypes[0]?.id || '');
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   // "New form" dialog: a fresh schema attached to a service by name.
   const [showNewForm, setShowNewForm] = useState(false);
@@ -154,7 +153,6 @@ export const FormBuilder: React.FC = () => {
     // Mirror what the store just published, otherwise the auto-save effect sees
     // a version mismatch and immediately creates a fresh draft.
     setConfig({ ...config, version: nextVersion });
-    setIsDirty(false);
     setSaveNotice(`Version ${nextVersion} published successfully! Past applications retain Version ${selectedType.publishedVersion}.`);
     setTimeout(() => setSaveNotice(null), 5000);
   };
@@ -193,18 +191,6 @@ export const FormBuilder: React.FC = () => {
     setSaveNotice(`New form “${name}” linked to ${target.title}. Add fields, then publish.`);
     setTimeout(() => setSaveNotice(null), 5000);
   };
-
-  // Keep the draft in sync with edits: preview is local, students read published.
-  useEffect(() => {
-    const saved = selectedType.draftFormConfig || selectedType.formConfig;
-    const dirty = JSON.stringify(config) !== JSON.stringify(saved);
-    setIsDirty(dirty);
-    if (!dirty) return;
-    const timer = setTimeout(() => {
-      saveFormTemplateDraft(selectedType.id, config);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [config, selectedType.id, selectedType.draftFormConfig, selectedType.formConfig, saveFormTemplateDraft]);
 
   // Virtual type for preview mode
   const previewAppType: ApplicationType = {
@@ -255,18 +241,35 @@ export const FormBuilder: React.FC = () => {
         </div>
       </div>
 
-      {(isDirty || selectedType.hasUnpublishedDraft) && (
+      {((JSON.stringify(config) !== JSON.stringify(selectedType.draftFormConfig || selectedType.formConfig)) || selectedType.hasUnpublishedDraft) && (
         <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-4 py-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <span>
-            <strong>{isDirty ? 'Saving draft…' : 'Draft saved'}</strong> — students still see the
-            published version (v{selectedType.publishedVersion}) until you publish.
+            {JSON.stringify(config) !== JSON.stringify(selectedType.draftFormConfig || selectedType.formConfig) ? (
+              <>
+                <strong>Unsaved changes</strong> — students still see the published version
+                (v{selectedType.publishedVersion}). Save the draft or publish to keep this work.
+              </>
+            ) : (
+              <>
+                <strong>Draft saved</strong> — students still see the published version
+                (v{selectedType.publishedVersion}) until you publish.
+              </>
+            )}
           </span>
-          <button
-            onClick={handlePublish}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-[#172b50] hover:bg-[#1f3763] rounded-lg shrink-0"
-          >
-            Publish to students
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleSaveDraft}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-[#172b50] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg"
+            >
+              Save draft
+            </button>
+            <button
+              onClick={handlePublish}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-[#172b50] hover:bg-[#1f3763] rounded-lg"
+            >
+              Publish to students
+            </button>
+          </div>
         </div>
       )}
 
