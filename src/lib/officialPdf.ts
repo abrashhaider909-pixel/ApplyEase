@@ -18,7 +18,7 @@ interface RenderOptions {
 
 const A4 = { width: 210, height: 297 };
 /** Bump when the layout changes so stored PDFs are regenerated. */
-export const PDF_RENDER_VERSION = 2;
+export const PDF_RENDER_VERSION = 4;
 const MARGIN = 18;
 
 function toDataUrl(buffer: ArrayBuffer): string {
@@ -31,17 +31,49 @@ function toDataUrl(buffer: ArrayBuffer): string {
   return `data:application/pdf;base64,${btoa(binary)}`;
 }
 
-/** Rasterise and downscale an SVG/data URL so jsPDF can embed it cheaply. */
-async function toPngDataUrl(src: string | undefined, targetWidth = 600): Promise<string | null> {
+/** Rasterise and downscale an SVG/data URL, keeping the true aspect ratio. */
+interface RasterImage {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * Seal artwork is stored as `data:image/svg+xml;utf8,…` with unescaped characters
+ * (`#` starts a URL fragment), so the browser refuses to load it. Re-encode the
+ * payload before using it as an image source.
+ */
+function normaliseImageSource(src: string): string {
+  if (!src.startsWith('data:image/svg+xml')) return src;
+  const comma = src.indexOf(',');
+  if (comma < 0) return src;
+  const meta = src.slice(0, comma);
+  if (meta.includes('base64')) return src;
+  try {
+    let svg = decodeURIComponent(src.slice(comma + 1));
+    // Stored artwork came through JSON escaping (\" instead of "), which is not
+    // valid XML and makes the browser reject the image.
+    if (svg.includes('\\"')) svg = svg.replace(/\\"/g, '"');
+    svg = svg.replace(/\\n/g, '\n').replace(/\\\//g, '/');
+    // Bare ampersands in seal text ("ENDORSED & VERIFIED") are invalid XML.
+    svg = svg.replace(/&(?!(?:[a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);)/g, '&amp;');
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  } catch {
+    return src;
+  }
+}
+
+async function toPngDataUrl(src: string | undefined, targetWidth = 600): Promise<RasterImage | null> {
   if (!src) return null;
 
   try {
     const image = new Image();
     image.crossOrigin = 'anonymous';
+    const safeSrc = normaliseImageSource(src);
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
       image.onerror = () => reject(new Error('image load failed'));
-      image.src = src;
+      image.src = safeSrc;
     });
 
     // Always redraw at a modest size: full-resolution scans can turn a one-page
@@ -58,10 +90,34 @@ async function toPngDataUrl(src: string | undefined, targetWidth = 600): Promise
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    return {
+      dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+      width: canvas.width,
+      height: canvas.height
+    };
   } catch {
     return null;
   }
+}
+
+/** Draw an image inside a box without stretching it. */
+function drawFitted(
+  pdf: any,
+  image: RasterImage,
+  x: number,
+  yTop: number,
+  maxWidth: number,
+  maxHeight: number
+): { width: number; height: number } {
+  const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
+  const width = image.width * scale;
+  const height = image.height * scale;
+  try {
+    pdf.addImage(image.dataUrl, 'JPEG', x, yTop + (maxHeight - height), width, height);
+  } catch {
+    /* keep the document readable even if the asset cannot be embedded */
+  }
+  return { width, height };
 }
 
 export async function buildOfficialDocumentPdf(
@@ -184,62 +240,61 @@ export async function buildOfficialDocumentPdf(
       signatories = [{ name: 'Authorised Officer', role: 'Office of the Registrar', date: issuedOn }];
     }
 
-    const signatureTop = Math.max(y + 8, pageHeight - 84);
+    // Signature block: as many columns as there are signatories (max 3 per row),
+    // placed so the image sits *above* its line and the seal never covers text.
+    const rows = Math.max(1, Math.ceil(signatories.length / 3));
+    const rowGap = 30;
     const perRow = Math.min(signatories.length, 3) || 1;
     const blockWidth = contentWidth / perRow;
-    const signatureHeight = 26;
+    const signatureTop = Math.max(y + 12, pageHeight - 92 - (rows - 1) * rowGap);
 
     for (let index = 0; index < signatories.length; index += 1) {
       const row = Math.floor(index / 3);
       const column = index % 3;
       const x = MARGIN + column * blockWidth;
-      const blockTop = signatureTop + row * signatureHeight;
+      const blockTop = signatureTop + row * rowGap;
       const signatory = signatories[index];
+      const lineWidth = Math.min(blockWidth - 14, 62);
 
       if (signatory.imageUrl) {
-        const png = await toPngDataUrl(signatory.imageUrl, 420);
-        if (png) {
-          try {
-            pdf.addImage(png, png.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG', x + 2, blockTop - 3, 34, 14);
-          } catch {
-            /* fall back to a signature line only */
-          }
+        const image = await toPngDataUrl(signatory.imageUrl, 480);
+        if (image) {
+          drawFitted(pdf, image, x + 1, blockTop, Math.min(blockWidth - 12, 32), 13);
         }
       }
 
       pdf.setDrawColor(90);
       pdf.setLineWidth(0.3);
-      pdf.line(x, blockTop + 13, x + blockWidth - 10, blockTop + 13);
+      pdf.line(x, blockTop + 14, x + lineWidth, blockTop + 14);
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(8);
       pdf.setTextColor(20);
-      pdf.text(signatory.name, x, blockTop + 17.5);
+      pdf.text(signatory.name, x, blockTop + 18.5);
 
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(7);
       pdf.setTextColor(90);
-      pdf.text(signatory.role, x, blockTop + 21);
-      pdf.text(signatory.date, x, blockTop + 24.5);
+      pdf.text(signatory.role, x, blockTop + 22);
+      pdf.text(signatory.date, x, blockTop + 25.5);
     }
 
-    // Seals sit under the signatures, one per applied stamp.
+    // Seals go in their own band beneath the signatures, never on top of a name.
     let stampX = MARGIN;
-    const stampTop = pageHeight - 52;
+    const stampTop = signatureTop + rows * rowGap + 1;
     for (const stamp of appliedStamps) {
-      const png = await toPngDataUrl(stamp.stampUrl, 320);
-      if (png) {
-        try {
-          pdf.addImage(png, png.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG', stampX, stampTop - 20, 22, 22);
-        } catch {
-          /* skip unreadable seal */
-        }
+      const image = await toPngDataUrl(stamp.stampUrl, 340);
+      let sealWidth = 0;
+      if (image) {
+        const drawn = drawFitted(pdf, image, stampX, stampTop, 20, 20);
+        sealWidth = drawn.width;
       }
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(6.5);
       pdf.setTextColor(110);
-      pdf.text(stamp.stampName, stampX, stampTop + 4);
-      stampX += 30;
+      pdf.text(stamp.stampName, stampX, stampTop + 24);
+      const labelWidth = pdf.getTextWidth(stamp.stampName);
+      stampX += Math.max(sealWidth, labelWidth, 20) + 10;
     }
 
     /* ------------------------------------------------------------------- QR */
