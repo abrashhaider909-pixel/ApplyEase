@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
 import { toast } from '../../lib/toast';
 import { ApplicationType, FormFieldDefinition, DocumentRequirement, FormTemplate } from '../../types';
@@ -32,6 +32,7 @@ export const FormBuilder: React.FC = () => {
   const [selectedTypeId, setSelectedTypeId] = useState<string>(applicationTypes[0]?.id || '');
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   // "New form" dialog: a fresh schema attached to a service by name.
   const [showNewForm, setShowNewForm] = useState(false);
@@ -148,8 +149,13 @@ export const FormBuilder: React.FC = () => {
       toast('error', 'Nothing to publish', 'Add at least one question before publishing this form.');
       return;
     }
+    const nextVersion = selectedType.publishedVersion + 1;
     publishFormTemplate(selectedType.id, config);
-    setSaveNotice(`Version ${selectedType.publishedVersion + 1} published successfully! Past applications retain Version ${selectedType.publishedVersion}.`);
+    // Mirror what the store just published, otherwise the auto-save effect sees
+    // a version mismatch and immediately creates a fresh draft.
+    setConfig({ ...config, version: nextVersion });
+    setIsDirty(false);
+    setSaveNotice(`Version ${nextVersion} published successfully! Past applications retain Version ${selectedType.publishedVersion}.`);
     setTimeout(() => setSaveNotice(null), 5000);
   };
 
@@ -187,6 +193,18 @@ export const FormBuilder: React.FC = () => {
     setSaveNotice(`New form “${name}” linked to ${target.title}. Add fields, then publish.`);
     setTimeout(() => setSaveNotice(null), 5000);
   };
+
+  // Keep the draft in sync with edits: preview is local, students read published.
+  useEffect(() => {
+    const saved = selectedType.draftFormConfig || selectedType.formConfig;
+    const dirty = JSON.stringify(config) !== JSON.stringify(saved);
+    setIsDirty(dirty);
+    if (!dirty) return;
+    const timer = setTimeout(() => {
+      saveFormTemplateDraft(selectedType.id, config);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [config, selectedType.id, selectedType.draftFormConfig, selectedType.formConfig, saveFormTemplateDraft]);
 
   // Virtual type for preview mode
   const previewAppType: ApplicationType = {
@@ -236,6 +254,21 @@ export const FormBuilder: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {(isDirty || selectedType.hasUnpublishedDraft) && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-4 py-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <span>
+            <strong>{isDirty ? 'Saving draft…' : 'Draft saved'}</strong> — students still see the
+            published version (v{selectedType.publishedVersion}) until you publish.
+          </span>
+          <button
+            onClick={handlePublish}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-[#172b50] hover:bg-[#1f3763] rounded-lg shrink-0"
+          >
+            Publish to students
+          </button>
+        </div>
+      )}
 
       {saveNotice && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs px-4 py-2.5 rounded-xl flex items-center justify-between animate-in fade-in">
