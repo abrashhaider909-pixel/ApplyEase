@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
+import { toast } from '../../lib/toast';
 import { ApplicationType, FormFieldDefinition, DocumentRequirement, FormTemplate } from '../../types';
 import { DynamicApplicationForm } from '../student/DynamicApplicationForm';
 import {
@@ -143,6 +144,10 @@ export const FormBuilder: React.FC = () => {
   };
 
   const handlePublish = () => {
+    if (config.fields.length === 0) {
+      toast('error', 'Nothing to publish', 'Add at least one question before publishing this form.');
+      return;
+    }
     publishFormTemplate(selectedType.id, config);
     setSaveNotice(`Version ${selectedType.publishedVersion + 1} published successfully! Past applications retain Version ${selectedType.publishedVersion}.`);
     setTimeout(() => setSaveNotice(null), 5000);
