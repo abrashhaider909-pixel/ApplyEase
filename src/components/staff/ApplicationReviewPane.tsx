@@ -778,7 +778,18 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
       )}
 
       {previewDoc && (
-        <DocumentPreview document={previewDoc} onClose={() => setPreviewDoc(null)} />
+        <DocumentPreview
+          document={previewDoc}
+          onClose={() => setPreviewDoc(null)}
+          onVerify={() => {
+            handleDocumentAction(previewDoc.id, 'verified');
+            setPreviewDoc(null);
+          }}
+          onReject={reason => {
+            handleDocumentAction(previewDoc.id, 'rejected', reason);
+            setPreviewDoc(null);
+          }}
+        />
       )}
     </div>
   );

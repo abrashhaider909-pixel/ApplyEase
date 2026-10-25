@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Download, ExternalLink, FileText, AlertTriangle } from 'lucide-react';
+import { X, Download, ExternalLink, FileText, AlertTriangle, Check } from 'lucide-react';
 import { UploadedDocument } from '../../types';
 
 interface DocumentPreviewProps {
   document: UploadedDocument;
   onClose: () => void;
+  /** Reviewer mode: mark the document verified without leaving the viewer. */
+  onVerify?: () => void;
+  /** Reviewer mode: reject with a mandatory reason. */
+  onReject?: (reason: string) => void;
 }
 
 /** Convert a stored data URL into a blob URL so PDFs render reliably. */
@@ -39,8 +43,12 @@ function useBlobUrl(dataUrl: string): string | null {
  * Images render directly; PDFs render in an embedded frame; anything else is
  * offered as a download so a reviewer is never blocked by an unsupported type.
  */
-export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ document: doc, onClose }) => {
+export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ document: doc, onClose, onVerify, onReject }) => {
   const blobUrl = useBlobUrl(doc.fileDataUrl);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState('');
+  const [reasonError, setReasonError] = useState<string | null>(null);
+  const reviewerMode = Boolean(onVerify || onReject);
   const kind = useMemo(() => {
     const type = (doc.fileType || '').toLowerCase();
     if (type.includes('pdf') || doc.fileDataUrl.startsWith('data:application/pdf')) return 'pdf';
@@ -164,6 +172,86 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ document: doc,
         {doc.status === 'rejected' && doc.rejectionReason && (
           <div className="px-5 py-2.5 bg-rose-50 border-t border-rose-200 text-[11px] text-rose-800 shrink-0">
             Returned earlier: {doc.rejectionReason}
+          </div>
+        )}
+
+        {/* Reviewer actions — verify straight after reading the document */}
+        {reviewerMode && (
+          <div className="border-t border-slate-200 bg-white shrink-0">
+            {rejecting && (
+              <div className="px-5 pt-3 space-y-2">
+                <label className="text-[11px] font-semibold text-rose-900 block">
+                  Why is this document being rejected?
+                </label>
+                <input
+                  value={reason}
+                  onChange={e => {
+                    setReason(e.target.value);
+                    setReasonError(null);
+                  }}
+                  placeholder="e.g. blurred scan, expired certificate, wrong document"
+                  className="w-full px-3 py-2 text-xs border border-rose-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-400"
+                  autoFocus
+                />
+                {reasonError && <p className="text-[11px] text-rose-700">{reasonError}</p>}
+              </div>
+            )}
+
+            <div className="px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-500">
+                {doc.status === 'verified'
+                  ? `Verified${doc.verifiedBy ? ' by ' + doc.verifiedBy : ''}`
+                  : doc.status === 'rejected'
+                    ? 'Rejected'
+                    : 'Pending review'}
+              </span>
+
+              <div className="flex items-center gap-2">
+                {onReject && !rejecting && (
+                  <button
+                    onClick={() => setRejecting(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 rounded-lg"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Reject
+                  </button>
+                )}
+                {onReject && rejecting && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setRejecting(false);
+                        setReason('');
+                      }}
+                      className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!reason.trim()) {
+                          setReasonError('A rejection reason is required.');
+                          return;
+                        }
+                        onReject(reason.trim());
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg"
+                    >
+                      Confirm rejection
+                    </button>
+                  </>
+                )}
+                {onVerify && (
+                  <button
+                    onClick={onVerify}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {doc.status === 'verified' ? 'Verified' : 'Verify document'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

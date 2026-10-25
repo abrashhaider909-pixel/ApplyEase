@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
 import { toast } from '../../lib/toast';
+import { isSigningTitle } from '../../lib/access';
 import {
   ApplicationType,
   WorkflowDefinition,
@@ -337,10 +338,21 @@ export const ServiceWorkflowDesigner: React.FC<ServiceWorkflowDesignerProps> = (
                 </div>
               </div>
 
+              {stages.some(stage => stage.requiresSignature || stage.requiresStamp) && (
+                <div className="bg-amber-50 border border-amber-200 text-[11px] text-amber-900 rounded-xl px-4 py-2.5 leading-relaxed">
+                  <strong>Signature &amp; seal required on:</strong>{' '}
+                  {stages
+                    .filter(stage => stage.requiresSignature || stage.requiresStamp)
+                    .map(stage => `${stage.name} (${stage.assignedDepartment || 'no department'})`)
+                    .join(' · ')}
+                </div>
+              )}
+
               <div className="space-y-3">
                 {stages.map((stage, index) => {
                   const deptStaff = staff.filter(u => u.department === stage.assignedDepartment);
                   const otherStaff = staff.filter(u => u.department !== stage.assignedDepartment);
+                  const hasSigningOfficer = deptStaff.some(person => isSigningTitle(person.designation));
                   const signingStage = stage.requiresSignature || stage.requiresStamp;
                   return (
                     <div key={stage.id} className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
@@ -495,10 +507,18 @@ export const ServiceWorkflowDesigner: React.FC<ServiceWorkflowDesignerProps> = (
                       </div>
 
                       {signingStage && (
-                        <p className="mt-3 text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                          Applied only by the head of {stage.assignedDepartment || 'this department'}.
-                          The administrator and other faculty cannot sign this stage.
-                        </p>
+                        hasSigningOfficer ? (
+                          <p className="mt-3 text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                            Applied only by the head of {stage.assignedDepartment || 'this department'}.
+                            The administrator and other faculty cannot sign on that department's behalf.
+                          </p>
+                        ) : (
+                          <p className="mt-3 text-[10px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1.5">
+                            No signing officer is registered in {stage.assignedDepartment || 'this department'} —
+                            this stage can never be completed. Add a Head of Department in <strong>Users</strong>,
+                            or turn off the signature/seal requirement here.
+                          </p>
+                        )
                       )}
                     </div>
                   );

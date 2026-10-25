@@ -82,6 +82,11 @@ export default function App() {
   // Selected item states
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [selectedAppTypeToApply, setSelectedAppTypeToApply] = useState<ApplicationType | null>(null);
+  // Always resolve the selected application from live store data, otherwise the
+  // review pane keeps rendering the snapshot it was opened with (stale statuses).
+  const activeApp = selectedApp
+    ? applications.find(app => app.id === selectedApp.id) ?? selectedApp
+    : null;
   const [verificationInitialCode, setVerificationInitialCode] = useState<string>('');
   const [showPublicVerify, setShowPublicVerify] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -269,7 +274,7 @@ export default function App() {
           </div>
         )}
         <motion.div
-          key={currentTab + (selectedApp?.id ?? '')}
+          key={currentTab + (activeApp?.id ?? '')}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
@@ -298,9 +303,9 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'application-tracker' && selectedApp && (
+        {currentTab === 'application-tracker' && activeApp && (
           <ApplicationTracker
-            application={selectedApp}
+            application={activeApp}
             onBack={() => {
               setSelectedApp(null);
               setCurrentTab(currentUser.role === 'student' ? 'student-dashboard' : 'staff-dashboard');
@@ -323,9 +328,9 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'staff-review' && selectedApp && (
+        {currentTab === 'staff-review' && activeApp && (
           <ApplicationReviewPane
-            application={selectedApp}
+            application={activeApp}
             onBack={() => {
               setSelectedApp(null);
               setCurrentTab('staff-dashboard');
