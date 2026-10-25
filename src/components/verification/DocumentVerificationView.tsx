@@ -81,19 +81,6 @@ export const DocumentVerificationView: React.FC<DocumentVerificationViewProps> =
           </button>
         </form>
 
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-          <span>Quick Test Sample:</span>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('APP-2026-LV-0194');
-              setSearched(true);
-            }}
-            className="font-mono text-[#172b50] font-semibold underline hover:text-[#f4772e]"
-          >
-            APP-2026-LV-0194
-          </button>
-        </div>
       </div>
 
       {/* Verification Result Card */}

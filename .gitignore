@@ -6,5 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
-_gem_probe.mjs
-_gemini_probe.mjs
+
+# Private operator notes (never commit)
+CREDENTIALS.local.md

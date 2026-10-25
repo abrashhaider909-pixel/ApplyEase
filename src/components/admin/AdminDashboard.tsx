@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
 import { StatusBadge } from '../common/StatusBadge';
-import { ConfirmDialog } from '../common/ConfirmDialog';
 import {
   FileText,
   Clock,
@@ -25,9 +24,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigateTab,
   onSelectApplication
 }) => {
-  const { applications, applicationTypes, auditLogs, triggerSLACheck, resetToDefaults } = useApplyEaseStore();
+  const { applications, applicationTypes, auditLogs, triggerSLACheck } = useApplyEaseStore();
   const [slaMessage, setSlaMessage] = useState<string | null>(null);
-  const [resetOpen, setResetOpen] = useState(false);
 
   const total = applications.length;
   const completed = applications.filter((a) => a.status === 'completed').length;
@@ -49,15 +47,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const res = triggerSLACheck();
     setSlaMessage(`Scheduler Pass Completed: Evaluated ${res.checkedCount} tasks. ${res.warningsGenerated} warnings generated, ${res.escalationsTriggered} escalations to Admin.`);
     setTimeout(() => setSlaMessage(null), 6000);
-  };
-
-  const handleReset = () => {
-    setResetOpen(true);
-  };
-
-  const confirmReset = () => {
-    resetToDefaults();
-    setResetOpen(false);
   };
 
   /* Department workload derived from the live workflow instances, not a
@@ -125,14 +114,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Run deadline check</span>
           </button>
 
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors shadow-xs"
-            title="Reset to fresh seed demo dataset"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset Demo Data</span>
-          </button>
         </div>
       </div>
 
@@ -339,15 +320,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
-      <ConfirmDialog
-        open={resetOpen}
-        title="Reset the platform to seed data?"
-        description="Every record, custom form draft and submission is replaced with the original demo dataset. This cannot be undone."
-        confirmLabel="Yes, reset everything"
-        tone="danger"
-        onConfirm={confirmReset}
-        onCancel={() => setResetOpen(false)}
-      />
+
     </div>
   );
 };

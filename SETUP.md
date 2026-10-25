@@ -24,12 +24,12 @@ npm run dev
 
 Open <http://localhost:3000> and sign in.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Administrator | `admin@gmail.com` | `123` |
+Account credentials are **not documented in this repository**. The administrator issues
+them when provisioning accounts; the operator keeps them in `CREDENTIALS.local.md`
+(git-ignored) or a password manager. Sign-in is email + password only — the UI
+never displays or pre-fills credentials, and there is no test-role switcher.
 
-All seeded student and staff accounts also use `123`. The administrator
-provisions new accounts from **Admin → Users**.
+The administrator provisions new accounts from **Admin → Users**.
 
 With credentials in `.env` the app reads and writes Supabase directly. Without
 them it runs entirely from browser storage — useful for a quick look, but data

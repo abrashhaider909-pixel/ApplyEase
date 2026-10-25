@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApplyEaseStore, isCloudConfigured } from '../../lib/store';
+import { useApplyEaseStore } from '../../lib/store';
 import { ApplyEaseLogo } from '../common/ApplyEaseLogo';
 import {
   ShieldCheck,
@@ -9,7 +9,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  ChevronDown,
   Loader2
 } from 'lucide-react';
 
@@ -18,10 +17,10 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => {
-  const { authenticate, users } = useApplyEaseStore();
+  const { authenticate } = useApplyEaseStore();
 
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +45,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
       setError(`Unexpected error during sign-in: ${err?.message || 'unknown'}`);
       setIsLoading(false);
     }
-  };
-
-  const handleFillCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setError(null);
   };
 
   return (
@@ -165,7 +158,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. admin@gmail.com or student@university.edu"
+                      placeholder="you@university.edu"
                       className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#172b50] focus:bg-white"
                     />
                   </div>
@@ -229,44 +222,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
               </form>
             </div>
 
-            {/* Seeded demo accounts: local mode only, collapsed by default.
-                A connected deployment never advertises credentials. */}
-            {!isCloudConfigured() && (
-              <details className="pt-4 border-t border-slate-100 group">
-                <summary className="cursor-pointer list-none flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>Demo accounts</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-                <p className="text-[10px] text-slate-400 mt-1.5">
-                  Local demo mode only — every seeded identity uses the password <code className="font-mono">123</code>.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 text-xs mt-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleFillCredentials('admin@gmail.com', '123')}
-                    className="px-2.5 py-1 rounded-lg border border-purple-200 bg-purple-50 text-purple-900 font-medium hover:bg-purple-100 transition-colors text-[11px]"
-                  >
-                    Admin (admin@gmail.com)
-                  </button>
-
-                  {users.filter(u => u.email !== 'admin@gmail.com').map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => handleFillCredentials(u.email, u.password || '123')}
-                      className={`px-2 py-1 rounded-lg border transition-colors text-[11px] ${
-                        u.role === 'student'
-                          ? 'border-orange-200 bg-orange-50 text-orange-950 hover:bg-orange-100'
-                          : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100'
-                      }`}
-                    >
-                      {u.name} ({u.role})
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
+            
           </div>
         </div>
       </main>

@@ -297,7 +297,7 @@ export const ApplyEaseStore = {
 
     if (cleanEmail === 'admin@gmail.com') {
       if (cleanPassword !== '123') {
-        return { ok: false, error: 'Incorrect password for Administrator account (admin@gmail.com).' };
+        return { ok: false, error: 'Incorrect email or password.' };
       }
       if (cloud.enabled) {
         await ensureCloudSync();

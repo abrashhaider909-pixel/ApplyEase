@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ApplyEaseLogo } from '../common/ApplyEaseLogo';
-import { RoleSwitcher } from '../common/RoleSwitcher';
 import { NotificationBell } from '../common/NotificationBell';
 import { useApplyEaseStore } from '../../lib/store';
 import { PlusCircle, Search, LogOut, Command, Menu, X, ChevronRight } from 'lucide-react';
@@ -140,7 +139,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <NotificationBell onSelectApplication={onSelectApplication} />
-          <RoleSwitcher />
 
           <button
             onClick={() => logout()}
