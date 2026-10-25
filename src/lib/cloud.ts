@@ -500,30 +500,64 @@ export { db as getCloudClient };
 /**
  * Subscribe to live changes on the hot tables. The callback is debounced so a
  * burst of remote writes triggers a single re-pull.
+ *
+ * Supabase caches channels by topic and refuses new `postgres_changes`
+ * callbacks once a topic has been subscribed — so every subscription gets a
+ * unique topic, stale ApplyEase channels are dropped first, and any realtime
+ * failure is swallowed (a live-sync problem must never block sign-in).
  */
 export function subscribeToChanges(onChange: () => void): (() => void) | null {
   const client = getSupabase();
   if (!client) return null;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const debounced = () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(onChange, 700);
-  };
 
-  const channels = [
-    client.channel('applyease-applications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, debounced),
-    client.channel('applyease-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, debounced),
-    client.channel('applyease-profiles')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, debounced),
-    client.channel('applyease-audit-logs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, debounced)
-  ];
-  channels.forEach(ch => ch.subscribe());
+  try {
+    // Drop channels left behind by an earlier connection attempt.
+    client
+      .getChannels()
+      .filter(channel => channel.topic.startsWith('realtime:applyease-'))
+      .forEach(channel => {
+        void client.removeChannel(channel);
+      });
 
-  return () => {
-    if (timer) clearTimeout(timer);
-    channels.forEach(ch => db().removeChannel(ch));
-  };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debounced = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(onChange, 700);
+    };
+
+    const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const makeChannel = (name: string, table: string) =>
+      client
+        .channel(`applyease-${name}-${suffix}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, debounced);
+
+    const channels = [
+      makeChannel('applications', 'applications'),
+      makeChannel('notifications', 'notifications'),
+      makeChannel('profiles', 'profiles'),
+      makeChannel('audit-logs', 'audit_logs')
+    ];
+
+    channels.forEach(channel => {
+      try {
+        channel.subscribe();
+      } catch (error) {
+        console.warn('[ApplyEase Cloud] Realtime subscribe failed:', error);
+      }
+    });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      channels.forEach(channel => {
+        try {
+          void client.removeChannel(channel);
+        } catch {
+          /* already gone */
+        }
+      });
+    };
+  } catch (error) {
+    console.warn('[ApplyEase Cloud] Could not start realtime sync:', error);
+    return null;
+  }
 }

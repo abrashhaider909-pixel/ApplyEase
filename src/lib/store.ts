@@ -257,11 +257,17 @@ async function ensureCloudSync(): Promise<boolean> {
   state.isHydrating = false;
   if (ok) {
     unsubscribeRealtime?.();
-    unsubscribeRealtime = subscribeToChanges(() => {
-      // Skip echoes of our own recent writes; pull everything else live.
-      if (isPulling || Date.now() - lastSelfPushAt < 1500) return;
-      void hydrateFromCloud(true);
-    });
+    try {
+      unsubscribeRealtime = subscribeToChanges(() => {
+        // Skip echoes of our own recent writes; pull everything else live.
+        if (isPulling || Date.now() - lastSelfPushAt < 1500) return;
+        void hydrateFromCloud(true);
+      });
+    } catch (error) {
+      // Realtime is a convenience; never let it fail a sign-in.
+      console.warn('[ApplyEase Cloud] Realtime unavailable:', error);
+      unsubscribeRealtime = null;
+    }
   } else {
     cloudSyncStarted = false; // allow retry on the next login / boot
   }
