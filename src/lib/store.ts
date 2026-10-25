@@ -97,9 +97,17 @@ function notifyListeners() {
   listeners.forEach(fn => fn());
 }
 
+// A restored session would skip the login page, so drop the stored flag.
+try {
+  localStorage.removeItem('applyease_is_authenticated');
+} catch {
+  /* ignore */
+}
+
 // State container
 let state = {
-  isAuthenticated: safeLoad<boolean>(STORAGE_KEYS.IS_AUTHENTICATED, false),
+  // Always start signed out: opening the site must land on the login page.
+  isAuthenticated: false,
   currentUser: safeLoad<UserProfile>(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]),
   users: safeLoad<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_USERS),
   applicationTypes: safeLoad<ApplicationType[]>(STORAGE_KEYS.APPLICATION_TYPES, INITIAL_APPLICATION_TYPES),

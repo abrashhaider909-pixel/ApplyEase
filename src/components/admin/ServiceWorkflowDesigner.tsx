@@ -340,6 +340,7 @@ export const ServiceWorkflowDesigner: React.FC<ServiceWorkflowDesignerProps> = (
               <div className="space-y-3">
                 {stages.map((stage, index) => {
                   const deptStaff = staff.filter(u => u.department === stage.assignedDepartment);
+                  const otherStaff = staff.filter(u => u.department !== stage.assignedDepartment);
                   const signingStage = stage.requiresSignature || stage.requiresStamp;
                   return (
                     <div key={stage.id} className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
@@ -417,13 +418,45 @@ export const ServiceWorkflowDesigner: React.FC<ServiceWorkflowDesignerProps> = (
                             onChange={e => updateStage(index, { assignedStaffId: e.target.value || undefined })}
                             className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#172b50] focus:bg-white"
                           >
-                            <option value="">Any officer in the department</option>
-                            {deptStaff.map(person => (
-                              <option key={person.id} value={person.id}>
-                                {person.name} — {person.designation}
-                              </option>
-                            ))}
+                            <option value="">
+                              {deptStaff.length > 0
+                                ? `Unassigned — any of the ${deptStaff.length} officers below`
+                                : 'Unassigned — any officer in the department'}
+                            </option>
+
+                            {deptStaff.length > 0 && (
+                              <optgroup label={`${stage.assignedDepartment} (${deptStaff.length})`}>
+                                {deptStaff.map(person => (
+                                  <option key={person.id} value={person.id}>
+                                    {person.name} — {person.designation || person.role}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+
+                            {otherStaff.length > 0 && (
+                              <optgroup
+                                label={
+                                  deptStaff.length > 0
+                                    ? 'Other departments'
+                                    : 'No staff in this department — assign from another'
+                                }
+                              >
+                                {otherStaff.map(person => (
+                                  <option key={person.id} value={person.id}>
+                                    {person.name} — {person.department}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
                           </select>
+                          <span className="block text-[10px] text-slate-500">
+                            {deptStaff.length > 0
+                              ? `${deptStaff.length} staff in ${stage.assignedDepartment}: ${deptStaff.map(p => p.name).join(', ')}`
+                              : stage.assignedDepartment
+                                ? `No staff registered in ${stage.assignedDepartment} — provision one in Users, or assign from another department.`
+                                : 'Choose a department to see its staff.'}
+                          </span>
                         </label>
 
                         <label className="space-y-1">

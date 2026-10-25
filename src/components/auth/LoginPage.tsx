@@ -22,7 +22,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -190,18 +189,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 text-[#172b50] rounded border-slate-300 focus:ring-1 focus:ring-[#172b50]"
-                    />
-                    <span>Remember my session</span>
-                  </label>
-                </div>
-
+                
                 <button
                   type="submit"
                   disabled={isLoading}
