@@ -35,17 +35,29 @@ npm run dev
 
 The development server runs at `http://localhost:3000`.
 
-## Environment variables
+## Configuration and security
 
-Copy `.env.example` to `.env` and fill in only your local values. The `.env` file is ignored by Git and must never be committed. Never use a Supabase `service_role` key in a client build.
+Runtime configuration is managed outside the repository through the local
+development environment or the deployment platform's protected configuration
+store. Never commit credentials, access tokens, private keys, or connection
+strings to source control.
 
-```bash
-VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
-VITE_GEMINI_API_KEY=your-gemini-api-key
-```
+The application uses public client configuration for browser integrations and
+server-side configuration for protected operations. Supabase service-role
+credentials must never be exposed to the browser or included in a client build.
+For database setup and operational guidance, see [SETUP.md](SETUP.md).
 
-For the database schema and operational instructions, see [SETUP.md](SETUP.md).
+## AI Tools and Development Acknowledgments
+
+The development of EasyApply was supported by the following tools:
+
+- **Kiro IDE** — Used as the development environment for building and refining the application.
+- **Kiro AI features** — Used for AI-assisted development tasks, where applicable.
+- **GitHub Copilot** — Used for coding assistance, code suggestions, and implementation support.
+
+These tools assisted the development process. The developer remains responsible
+for reviewing the code, testing the application, and making final implementation
+decisions.
 
 ## Validation
 
