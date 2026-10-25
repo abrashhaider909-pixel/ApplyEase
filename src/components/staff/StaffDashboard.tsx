@@ -35,10 +35,12 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const assignedApps = applications.filter((app) => {
     if (showCompletedOnly) {
       // Closed student records belong to the Registrar and the Head of the
-      // student's own department — not to every officer who touched the file.
+      // student's own department. Anything still moving that this officer
+      // handled stays visible to them as read-only history.
       const closed =
         app.status === 'completed' || app.status === 'rejected' || app.status === 'cancelled';
-      return closed && canReviewRecord(currentUser, app);
+      if (closed) return canReviewRecord(currentUser, app);
+      return app.stageInstances.some(stage => stage.actionTakenBy === currentUser.name);
     }
 
     if (app.status === 'completed' || app.status === 'rejected' || app.status === 'draft') {
@@ -132,11 +134,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             <span className="font-semibold text-slate-700">{currentUser.designation || currentUser.role}</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {showCompletedOnly ? 'Closed Student Records' : 'Actionable Task Queue'}
+            {showCompletedOnly ? 'Processed Applications' : 'Actionable Task Queue'}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             {showCompletedOnly
-              ? `Permanent records retained for the Registrar and the Head of ${currentUser.department}.`
+              ? 'Files you have acted on, plus closed records you are entitled to review.'
               : 'Inspect student documentation, verify credentials, apply electronic signatures, and advance workflow stages.'}
           </p>
         </div>
@@ -276,7 +278,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           <div className="p-12 text-center">
             <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-3" />
             <h3 className="text-sm font-semibold text-slate-800">
-              {showCompletedOnly ? 'No records held for you' : 'No pending assignments'}
+              {showCompletedOnly ? 'Nothing processed yet' : 'No pending assignments'}
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               {showCompletedOnly

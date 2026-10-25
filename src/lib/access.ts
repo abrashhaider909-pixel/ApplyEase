@@ -56,6 +56,24 @@ export function canApplySignature(user: UserProfile | null | undefined, departme
 }
 
 /**
+ * Authority for one concrete workflow stage.
+ *
+ * A department head may always sign their own department's stage. In addition,
+ * when the administrator explicitly assigns a stage to a signing officer from
+ * another department (common for cross-department reviews), that officer may
+ * sign it — otherwise the stage would be impossible to complete.
+ */
+export function canSignStage(
+  user: UserProfile | null | undefined,
+  stage: { assignedDepartment?: string; assignedStaffId?: string } | null | undefined
+): boolean {
+  if (!user || !stage) return false;
+  if (user.role === 'admin') return false;
+  if (canApplySignature(user, stage.assignedDepartment || '')) return true;
+  return Boolean(stage.assignedStaffId && stage.assignedStaffId === user.id && isSigningOfficer(user));
+}
+
+/**
  * Signature assets usable by this officer: active, from their department, and
  * their own (a head never signs with a colleague's signature).
  */

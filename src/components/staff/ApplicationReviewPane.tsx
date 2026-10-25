@@ -8,7 +8,8 @@ import { PDF_RENDER_VERSION } from '../../lib/officialPdf';
 import { downloadDataUrl } from '../../lib/download';
 import { evaluateStageSLA } from '../../lib/slaEngine';
 import {
-  canApplySignature,
+  canSignStage,
+  canWorkStage,
   canReviewRecord,
   availableSignatures,
   availableStamps
@@ -58,7 +59,8 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
   const sla = currentStage ? evaluateStageSLA(currentStage) : null;
 
   const stageDepartment = currentStage?.assignedDepartment || '';
-  const canSeal = canApplySignature(currentUser, stageDepartment);
+  const canSeal = canSignStage(currentUser, currentStage);
+  const canAct = canWorkStage(currentUser, application);
   const mySignatures = availableSignatures(currentUser, signatures);
   const myStamps = availableStamps(currentUser, stamps);
   const recordLocked =
@@ -368,6 +370,7 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
                             <button
                               type="button"
                               onClick={() => handleDocumentAction(doc.id, 'verified')}
+                              disabled={!canAct}
                               className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1 ${
                                 isVerified
                                   ? 'bg-emerald-700 text-white'
@@ -384,6 +387,7 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
                                 setRejectingDocId(doc.id);
                                 setDocRejectionReason('');
                               }}
+                              disabled={!canAct}
                               className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1 ${
                                 isRejected
                                   ? 'bg-rose-700 text-white'
@@ -538,12 +542,20 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
               />
             </div>
 
+            {!canAct && (
+              <p className="text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
+                You handled an earlier stage of this file. It is now with{' '}
+                <strong>{currentStage?.assignedDepartment || 'another department'}</strong>, so this
+                view is read-only.
+              </p>
+            )}
+
             {/* Consequential Action Buttons */}
             <div className="space-y-2.5 pt-2 border-t border-slate-100">
               {/* Primary Approval / Signature Action */}
               <button
                 type="button"
-                disabled={isProcessing || (needsSeal && !canSeal)}
+                disabled={isProcessing || !canAct || (needsSeal && !canSeal)}
                 onClick={() => {
                   if (needsSeal && !canSeal) return;
                   if (needsSeal) {
@@ -583,7 +595,7 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
               {/* Request Correction Button */}
               <button
                 type="button"
-                disabled={isProcessing}
+                disabled={isProcessing || !canAct}
                 onClick={handleRequestCorrection}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition-colors"
               >
@@ -594,7 +606,7 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
               {/* Reject Application Button */}
               <button
                 type="button"
-                disabled={isProcessing}
+                disabled={isProcessing || !canAct}
                 onClick={handleReject}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition-colors"
               >
@@ -781,14 +793,22 @@ export const ApplicationReviewPane: React.FC<ApplicationReviewPaneProps> = ({
         <DocumentPreview
           document={previewDoc}
           onClose={() => setPreviewDoc(null)}
-          onVerify={() => {
-            handleDocumentAction(previewDoc.id, 'verified');
-            setPreviewDoc(null);
-          }}
-          onReject={reason => {
-            handleDocumentAction(previewDoc.id, 'rejected', reason);
-            setPreviewDoc(null);
-          }}
+          onVerify={
+            canAct
+              ? () => {
+                  handleDocumentAction(previewDoc.id, 'verified');
+                  setPreviewDoc(null);
+                }
+              : undefined
+          }
+          onReject={
+            canAct
+              ? reason => {
+                  handleDocumentAction(previewDoc.id, 'rejected', reason);
+                  setPreviewDoc(null);
+                }
+              : undefined
+          }
         />
       )}
     </div>

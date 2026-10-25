@@ -32,7 +32,7 @@ import { addBusinessHours, runSLASchedulerCheck } from './slaEngine';
 import { calculateDocumentHash } from './pdfGenerator';
 import { buildIssuedDocumentPdf } from './issuedDocument';
 import { PDF_RENDER_VERSION } from './officialPdf';
-import { canApplySignature } from './access';
+import { canApplySignature, canSignStage } from './access';
 import {
   cloud,
   pullAll,
@@ -534,6 +534,18 @@ export const ApplyEaseStore = {
   },
 
   addNotification(notif: Omit<NotificationItem, 'id' | 'createdAt'>) {
+    // Collapse identical unread alerts instead of stacking duplicates on every
+    // repeated action (the same task advancing four times produced four alerts).
+    const alreadyQueued = state.notifications.some(
+      existing =>
+        !existing.read &&
+        existing.userId === notif.userId &&
+        existing.title === notif.title &&
+        existing.message === notif.message &&
+        (existing.applicationRef || '') === (notif.applicationRef || '')
+    );
+    if (alreadyQueued) return;
+
     const newNotif: NotificationItem = {
       ...notif,
       id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -724,6 +736,17 @@ export const ApplyEaseStore = {
     const app = state.applications.find(a => a.id === params.applicationId);
     if (!app) return;
 
+    const existingDoc = app.uploadedDocuments.find(d => d.id === params.documentId);
+    if (!existingDoc) return;
+    // Re-clicking "Verify" on an already-verified document used to append a new
+    // timeline event, audit entry and notification every time.
+    if (
+      existingDoc.status === params.status &&
+      (params.status === 'verified' || (existingDoc.rejectionReason || '') === (params.rejectionReason || ''))
+    ) {
+      return;
+    }
+
     const nowIso = new Date().toISOString();
     const updatedDocs = app.uploadedDocuments.map(doc => {
       if (doc.id === params.documentId) {
@@ -802,7 +825,7 @@ export const ApplyEaseStore = {
     }
     const stageNeedsSeal = Boolean(currentStage.requiresSignature || currentStage.requiresStamp);
     if (params.action === 'approve' && stageNeedsSeal) {
-      if (!canApplySignature(state.currentUser, currentStage.assignedDepartment)) {
+      if (!canSignStage(state.currentUser, currentStage)) {
         throw new Error(
           `Stage "${currentStage.name}" requires the signature and seal of the Head of ${currentStage.assignedDepartment}.`
         );
@@ -814,7 +837,12 @@ export const ApplyEaseStore = {
         throw new Error('The official department seal is required to approve this stage.');
       }
       const signatureAsset = state.signatures.find(s => s.id === params.signatureAssetId);
-      if (params.signatureAssetId && signatureAsset && signatureAsset.department !== currentStage.assignedDepartment) {
+      if (
+        params.signatureAssetId &&
+        signatureAsset &&
+        signatureAsset.department !== currentStage.assignedDepartment &&
+        signatureAsset.department !== state.currentUser.department
+      ) {
         throw new Error('The selected signature belongs to another department.');
       }
     }
