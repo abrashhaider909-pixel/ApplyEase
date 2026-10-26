@@ -12,7 +12,7 @@ import handler from './chat.js';
 
 const app = express();
 const dist = path.resolve('dist');
-const port = Number(process.env.PORT || 3100);
+const port = Number(process.env.PORT || 3001);
 
 app.all('/api/chat', (req, res) => {
   const started = Date.now();

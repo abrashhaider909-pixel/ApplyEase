@@ -22,12 +22,22 @@ const MODEL_CANDIDATES = [
   'gemini-flash-latest',
 ].filter(Boolean);
 
-const FALLBACK_SYSTEM_INSTRUCTION =
-  'You are Aria, the Application Assistant for ApplyEase, a university administrative ' +
-  'workflow platform. Help users submit and track applications, understand required ' +
-  'documents, signatures, seals and QR certificate verification. Never approve ' +
-  'applications, never claim signing authority, never invent deadlines or fees. ' +
-  'Answer in 2-4 sentences.';
+const FALLBACK_SYSTEM_INSTRUCTION = `
+You are Aria, the Application Assistant for ApplyEase, the administrative workflow
+platform of Apex State University.
+
+Help students, staff and administrators understand how to use ApplyEase: how
+applications are submitted, how documents are uploaded and verified, how stages
+(Faculty Advisor, HoD, Warden, Registrar, Finance, depending on type) and SLA
+deadlines work, and how signatures, seals and the verification QR code on issued
+certificates are used.
+
+Strict limits:
+- Do NOT approve applications, issue documents, or claim signing authority.
+- Do NOT fabricate deadlines, fee amounts or university policies.
+- Do NOT ask for or repeat passwords, full ID numbers or auth tokens.
+- If a policy is unknown, say so and suggest contacting the department.
+- Answer in 2-4 sentences unless a list is clearly better.`;
 
 function apiKey() {
   return (
@@ -109,8 +119,6 @@ export default async function handler(req, res) {
   // successful call instead of aborting early; vercel.json sets maxDuration 30.
   const deadline = Date.now() + 25000;
 
-  let quotaHit = false;
-  let quotaDetail = '';
 
   for (const model of MODEL_CANDIDATES) {
     const remaining = deadline - Date.now();
@@ -135,8 +143,8 @@ export default async function handler(req, res) {
           const detail = (await upstream.text()).slice(0, 300);
           lastError = `Gemini ${upstream.status}: ${detail}`;
           if (upstream.status === 429) {
-            quotaHit = true;
-            if (!quotaDetail) quotaDetail = detail;
+            // One shared account quota: trying other models just burns 20s.
+            return send(res, 429, { error: 'quota', detail });
           }
           // 400 usually means a rejected parameter (thinkingConfig); retry bare.
           if (upstream.status === 400 && withThinking) continue;
@@ -159,8 +167,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // A daily free-tier cap looks like a generic failure otherwise, and users
-  // would keep retrying against a wall.
-  if (quotaHit) return send(res, 429, { error: 'quota', detail: quotaDetail || lastError });
+  // 429 already returned early, so this is a retired model / outage / timeout.
   return send(res, 502, { error: 'upstream', detail: lastError });
 }
