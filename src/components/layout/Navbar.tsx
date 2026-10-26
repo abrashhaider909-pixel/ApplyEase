@@ -51,6 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             { tab: 'admin-form-builder', label: 'Form Builder' },
             { tab: 'admin-doc-designer', label: 'Documents' },
             { tab: 'admin-signatures', label: 'Signatures' },
+            { tab: 'admin-sla-report', label: 'SLA Report' },
             { tab: 'admin-users', label: 'Users' },
             { tab: 'admin-audit-logs', label: 'Audit' }
           ];

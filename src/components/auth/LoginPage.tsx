@@ -49,7 +49,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
       <header className="bg-[#172b50] text-white py-2.5 px-4 sm:px-8 border-b border-white/10">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-semibold tracking-wide">APEX STATE UNIVERSITY</span>
+            <span className="font-semibold tracking-wide">MCS</span>
             <span className="text-slate-400">|</span>
             <span className="text-slate-300">Central Academic & Administrative Clearance Portal</span>
           </div>
@@ -214,7 +214,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
 
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-slate-500">
-        ApplyEase · Apex State University Records Office · records@apexstate.edu
+        ApplyEase · MCS Records Office · records@mcs.edu
       </footer>
     </div>
   );

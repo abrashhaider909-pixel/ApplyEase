@@ -18,7 +18,7 @@ interface RenderOptions {
 
 const A4 = { width: 210, height: 297 };
 /** Bump when the layout changes so stored PDFs are regenerated. */
-export const PDF_RENDER_VERSION = 4;
+export const PDF_RENDER_VERSION = 5;
 const MARGIN = 18;
 
 function toDataUrl(buffer: ArrayBuffer): string {
@@ -143,7 +143,7 @@ export async function buildOfficialDocumentPdf(
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(16);
     pdf.setTextColor(23, 43, 80);
-    pdf.text('APEX STATE UNIVERSITY', pageWidth / 2, y, { align: 'center' });
+    pdf.text('MCS', pageWidth / 2, y, { align: 'center' });
     y += 6;
 
     pdf.setFont('helvetica', 'normal');

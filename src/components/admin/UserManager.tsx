@@ -231,7 +231,7 @@ export const UserManager: React.FC = () => {
   // Form state for creating a new user
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('Apex2026!');
+  const [newPassword, setNewPassword] = useState('Mcs2026!');
   const [newRole, setNewRole] = useState<UserRole>('student');
   const [newDepartment, setNewDepartment] = useState(DEPARTMENTS[0]);
   const [newRegNo, setNewRegNo] = useState('');
@@ -246,7 +246,7 @@ export const UserManager: React.FC = () => {
   const resetForm = () => {
     setNewName('');
     setNewEmail('');
-    setNewPassword('Apex2026!');
+    setNewPassword('Mcs2026!');
     setNewRegNo('');
     setNewDesignation('');
     setNewAvatarUrl(undefined);

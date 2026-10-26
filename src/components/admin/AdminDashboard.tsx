@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
+import { evaluateStageSLA } from '../../lib/slaEngine';
 import { StatusBadge } from '../common/StatusBadge';
 import {
   FileText,
@@ -12,6 +13,7 @@ import {
   TrendingUp,
   Building2,
   ShieldCheck,
+  ShieldAlert,
   Activity
 } from 'lucide-react';
 
@@ -28,6 +30,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [slaMessage, setSlaMessage] = useState<string | null>(null);
 
   const total = applications.length;
+
+  // Faculty SLA picture, derived from live stage deadlines (no manual input).
+  const slaSummary = useMemo(() => {
+    const officers = new Set<string>();
+    let overdue = 0;
+    applications
+      .filter(app => !['completed', 'rejected', 'cancelled'].includes(app.status))
+      .forEach(app => {
+        app.stageInstances.forEach(stage => {
+          if (!['in_progress', 'escalated'].includes(stage.status)) return;
+          if (!stage.deadline) return;
+          if (!evaluateStageSLA(stage).isOverdue) return;
+          overdue += 1;
+          officers.add(stage.assignedStaffId || stage.assignedDepartment);
+        });
+      });
+    return { overdue, officers: officers.size };
+  }, [applications]);
   const completed = applications.filter((a) => a.status === 'completed').length;
   const inProgress = applications.filter(
     (a) =>
@@ -270,6 +290,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Faculty SLA strip — generated from live deadlines, not manual entry */}
+      <button
+        onClick={() => onNavigateTab('admin-sla-report')}
+        className="w-full text-left bg-white rounded-2xl border border-slate-200 p-4 shadow-xs hover:border-slate-300 hover:shadow-md transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${slaSummary.overdue > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-slate-900">Faculty SLA compliance</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {slaSummary.overdue > 0
+                ? `${slaSummary.overdue} task${slaSummary.overdue === 1 ? '' : 's'} past the target across ${slaSummary.officers} officer${slaSummary.officers === 1 ? '' : 's'} · report updates automatically`
+                : 'Every live stage is inside its deadline · report updates automatically'}
+            </p>
+          </div>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-[#172b50] group-hover:text-[#f4772e]">
+            Open report <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </button>
 
       {/* Live activity stream */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">

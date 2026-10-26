@@ -180,16 +180,16 @@ export const ServiceWorkflowDesigner: React.FC<ServiceWorkflowDesignerProps> = (
       id: `doc-${id}`,
       version: 1,
       title: `${title.toUpperCase()} — OFFICIAL ORDER`,
-      subtitle: 'Apex State University',
+      subtitle: 'MCS',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY · OFFICE OF THE REGISTRAR',
+      headerNotice: 'MCS · OFFICE OF THE REGISTRAR',
       bodyParagraphs: [
         `This is to certify that {{student_name}} ({{registration_number}}) has been granted the ${title.toLowerCase()} recorded under reference {{application_ref}}.`,
         'This order is issued electronically and may be verified against the university registry using the code printed below.'
       ],
       signatureSlots: [],
       stampSlots: [],
-      footerNotice: 'Issued by the Office of the Registrar · Apex State University',
+      footerNotice: 'Issued by the Office of the Registrar · MCS',
       includeVerificationQR: true
     };
 

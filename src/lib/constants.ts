@@ -204,8 +204,8 @@ export const INITIAL_STAMPS: StampAsset[] = [
     id: 'stamp-academic-seal',
     name: 'University Academic Registrar Seal',
     type: 'stamp',
-    imageUrl: generateOfficialStampSvg('Apex State University', 'Office of Academic Affairs', 'REG-2026-AUTH', '#172b50', 0.9),
-    originalImageUrl: generateOfficialStampSvg('Apex State University', 'Office of Academic Affairs', 'REG-2026-AUTH', '#172b50', 0.9),
+    imageUrl: generateOfficialStampSvg('MCS', 'Office of Academic Affairs', 'REG-2026-AUTH', '#172b50', 0.9),
+    originalImageUrl: generateOfficialStampSvg('MCS', 'Office of Academic Affairs', 'REG-2026-AUTH', '#172b50', 0.9),
     department: 'Office of the University Registrar',
     isTransparent: true,
     opacity: 0.9,
@@ -360,7 +360,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'OFFICIAL LEAVE SANCTION ORDER',
       subtitle: 'Issued under University Administrative Regulations (Academic Affairs)',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • OFFICE OF ACADEMIC AFFAIRS',
+      headerNotice: 'MCS • OFFICE OF ACADEMIC AFFAIRS',
       bodyParagraphs: [
         'This is to officially certify that the application for academic leave submitted by student {{student_name}} (Registration No: {{registration_number}}) of the Department of {{department}} has been thoroughly verified, assessed against attendance regulations, and granted formal sanction.',
         'Sanctioned Period: From {{start_date}} to {{end_date}}. Destination: {{destination}}.',
@@ -567,7 +567,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'HOSTEL MESS EXEMPTION & REBATE CERTIFICATE',
       subtitle: 'Board of Residential Student Facilities',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • DIVISION OF STUDENT WELFARE',
+      headerNotice: 'MCS • DIVISION OF STUDENT WELFARE',
       bodyParagraphs: [
         'This certificate sanctions mess billing exemption for resident student {{student_name}} (Reg: {{registration_number}}) of {{hostel_name}}.',
         'Effective Period: {{start_date}} through {{end_date}}. Purpose: {{reason}}.',
@@ -727,7 +727,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'ORIGINAL CERTIFICATE RELEASE AUTHORIZATION',
       subtitle: 'Office of Academic Records & Registration',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • REGISTRATION DIVISION',
+      headerNotice: 'MCS • REGISTRATION DIVISION',
       bodyParagraphs: [
         'Authorization is hereby granted for the release of original educational credentials to student {{student_name}}, bearing Registration No: {{registration_number}}, Department of {{department}}.',
         'Document Released: {{document_requested}}. Nature of Withdrawal: {{withdrawal_mode}}.',
@@ -882,7 +882,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'CENTRAL LIBRARY RFID MEMBERSHIP SANCTION',
       subtitle: 'Information & Digital Resource Services',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • CENTRAL LIBRARY SYSTEM',
+      headerNotice: 'MCS • CENTRAL LIBRARY SYSTEM',
       bodyParagraphs: [
         'Membership privileges are hereby activated for student {{student_name}} (Reg: {{registration_number}}), Department of {{department}}.',
         'Category: {{card_type}}. Primary Research Domain: {{specialization}}.',
@@ -1031,10 +1031,10 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'CERTIFICATE OF BONAFIDE STUDENT STATUS',
       subtitle: 'Office of the Registrar • Academic Certification Unit',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • ESTABLISHED BY STATUTORY CHARTER',
+      headerNotice: 'MCS • ESTABLISHED BY STATUTORY CHARTER',
       bodyParagraphs: [
         'TO WHOMSOEVER IT MAY CONCERN',
-        'This is to certify that {{student_name}}, bearing University Registration Number {{registration_number}}, is a bonafide, full-time regular student of Apex State University, enrolled in the Department of {{department}}.',
+        'This is to certify that {{student_name}}, bearing University Registration Number {{registration_number}}, is a bonafide, full-time regular student of MCS, enrolled in the Department of {{department}}.',
         'According to university academic records, the student maintains good standing with satisfactory attendance and exemplary conduct.',
         'This certificate is formally issued at the request of the student for presentation to {{authority_name}} for the explicit purpose of {{purpose}}.'
       ],
@@ -1191,7 +1191,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'FEE CONCESSION & INSTALLMENT APPROVAL ORDER',
       subtitle: 'Finance & Accounts Standing Committee',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • DIVISION OF FINANCE',
+      headerNotice: 'MCS • DIVISION OF FINANCE',
       bodyParagraphs: [
         'The Finance and Accounts Standing Committee has reviewed the application submitted by {{student_name}} (Reg: {{registration_number}}).',
         'Sanction is hereby accorded for: {{request_type}} in relation to the amount of ${{amount_involved}}.',
@@ -1355,7 +1355,7 @@ export const INITIAL_APPLICATION_TYPES: ApplicationType[] = [
       title: 'ADMINISTRATIVE SANCTION MEMORANDUM',
       subtitle: 'Office of Administrative Services',
       orientation: 'portrait',
-      headerNotice: 'APEX STATE UNIVERSITY • CENTRAL ADMINISTRATION',
+      headerNotice: 'MCS • CENTRAL ADMINISTRATION',
       bodyParagraphs: [
         'Reference: {{reference_number}}.',
         'Student {{student_name}} (Reg: {{registration_number}}) from the Department of {{department}} has submitted a petition regarding: {{subject}}.',

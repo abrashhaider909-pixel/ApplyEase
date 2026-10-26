@@ -17,6 +17,7 @@ import {
   OfficialDocumentTemplate,
   FormTemplate,
   WorkflowDefinition,
+  WorkflowStageDefinition,
   IssuedDocument
 } from '../types';
 import {
@@ -32,6 +33,11 @@ import { addBusinessHours, runSLASchedulerCheck } from './slaEngine';
 import { calculateDocumentHash } from './pdfGenerator';
 import { buildIssuedDocumentPdf } from './issuedDocument';
 import { PDF_RENDER_VERSION } from './officialPdf';
+import {
+  CUSTOM_APPLICATION_ID_PREFIX,
+  customDocumentTemplate,
+  isCustomApplication
+} from './customApplication';
 import { canApplySignature, canSignStage } from './access';
 import {
   cloud,
@@ -592,11 +598,46 @@ export const ApplyEaseStore = {
     formData: Record<string, any>;
     uploadedDocuments: UploadedDocument[];
     paymentReceiptUrl?: string;
+    /** Student-composed application: no catalog entry, explicit routing. */
+    custom?: {
+      title: string;
+      key: string;
+      stages: WorkflowStageDefinition[];
+    };
   }): Promise<Application> {
-    const appType = state.applicationTypes.find(t => t.id === params.applicationTypeId);
-    if (!appType) {
+    const catalogType = state.applicationTypes.find(t => t.id === params.applicationTypeId);
+    if (!catalogType && !params.custom) {
       throw new Error('Application type not found');
     }
+
+    // A student-composed application has no catalog entry, so build an
+    // ephemeral definition; everything downstream then works unchanged.
+    const appType: ApplicationType = catalogType ?? {
+      id: `${CUSTOM_APPLICATION_ID_PREFIX}${Date.now()}`,
+      key: params.custom!.key,
+      title: params.custom!.title,
+      description: 'Student-composed application',
+      category: 'administrative',
+      icon: 'file-text',
+      estimatedDurationDays: Math.max(
+        1,
+        Math.ceil(params.custom!.stages.reduce((total, stage) => total + stage.slaHours, 0) / 8)
+      ),
+      active: true,
+      publishedVersion: 1,
+      formConfig: {
+        version: 1,
+        title: params.custom!.title,
+        description: '',
+        instructions: '',
+        fields: [],
+        requiredDocuments: [],
+        declarations: [],
+        feeRules: { required: false, amount: 0 }
+      },
+      documentTemplate: customDocumentTemplate(params.custom!.title),
+      workflowDefinition: { id: `custom-wf-${Date.now()}`, version: 1, stages: params.custom!.stages }
+    };
 
     const now = new Date();
     const nowIso = now.toISOString();
@@ -646,7 +687,7 @@ export const ApplyEaseStore = {
         department: state.currentUser.department,
         phone: state.currentUser.phone
       },
-      status: 'under_verification',
+      status: stageInstances[0]?.requiresSignature ? 'pending_signature' : 'under_verification',
       currentStageId: stageInstances[0].stageId,
       currentStageIndex: 0,
       formData: params.formData,
@@ -813,7 +854,7 @@ export const ApplyEaseStore = {
     if (!app) throw new Error('Application not found');
 
     const appType = state.applicationTypes.find(t => t.id === app.applicationTypeId);
-    if (!appType) throw new Error('Application type definition missing');
+    if (!appType && !isCustomApplication(app)) throw new Error('Application type definition missing');
 
     const now = new Date();
     const nowIso = now.toISOString();
@@ -935,7 +976,7 @@ export const ApplyEaseStore = {
         return updatedApp;
       } else {
         // FINAL STAGE COMPLETE: Generate official issued document!
-        const docTemplate = appType.documentTemplate;
+        const docTemplate = appType?.documentTemplate ?? customDocumentTemplate(app.applicationTypeTitle);
         const verificationCode = `ASU-VRF-${Math.floor(100000 + Math.random() * 900000)}-${app.referenceNumber.split('-')[2]}`;
         const documentNumber = `SANCTION-2026-${app.studentSnapshot.department.substring(0, 3).toUpperCase()}-${app.referenceNumber.split('-')[3]}`;
         const rawContentToHash = `${app.referenceNumber}-${documentNumber}-${verificationCode}-${nowIso}-${state.currentUser.id}`;
@@ -997,7 +1038,8 @@ export const ApplyEaseStore = {
         const issuedType = state.applicationTypes.find(t => t.id === app.applicationTypeId);
         const issuedPdf = await buildIssuedDocumentPdf(
           { ...app, issuedDocument: issuedDoc },
-          issuedType?.documentTemplate
+          issuedType?.documentTemplate ??
+            (isCustomApplication(app) ? customDocumentTemplate(app.applicationTypeTitle) : undefined)
         );
         if (issuedPdf) {
           issuedDoc.pdfDataUrl = issuedPdf;
@@ -1513,6 +1555,8 @@ const boundActions = {
   triggerSLACheck: ApplyEaseStore.triggerSLACheck.bind(ApplyEaseStore),
   markNotificationAsRead: ApplyEaseStore.markNotificationAsRead.bind(ApplyEaseStore),
   markAllNotificationsAsRead: ApplyEaseStore.markAllNotificationsAsRead.bind(ApplyEaseStore),
+  addNotification: ApplyEaseStore.addNotification.bind(ApplyEaseStore),
+  addAuditLog: ApplyEaseStore.addAuditLog.bind(ApplyEaseStore),
   addUser: ApplyEaseStore.addUser.bind(ApplyEaseStore),
   deleteUser: ApplyEaseStore.deleteUser.bind(ApplyEaseStore),
   updateUser: ApplyEaseStore.updateUser.bind(ApplyEaseStore),

@@ -56,7 +56,7 @@ export const DocumentVerificationView: React.FC<DocumentVerificationViewProps> =
           Public Document Authenticity & Verification Portal
         </h1>
         <p className="text-xs text-slate-500 max-w-lg mx-auto">
-          Verify the cryptographic validity, authorized signatures, and institutional sanction records of any issued Apex State University document.
+          Verify the cryptographic validity, authorized signatures, and institutional sanction records of any issued MCS document.
         </p>
       </div>
 

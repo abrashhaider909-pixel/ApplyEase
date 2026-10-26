@@ -485,7 +485,7 @@ export const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({
                         />
                         <div>
                           <h2 className="text-base font-extrabold tracking-tight text-[#172b50]">
-                            APEX STATE UNIVERSITY
+                            MCS
                           </h2>
                           <p className="text-[11px] font-semibold text-slate-600 tracking-wider">
                             OFFICE OF ACADEMIC AFFAIRS & REGISTRATION

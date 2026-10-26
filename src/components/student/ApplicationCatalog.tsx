@@ -17,9 +17,10 @@ import {
 
 interface ApplicationCatalogProps {
   onSelectType: (type: ApplicationType) => void;
+  onStartCustom: () => void;
 }
 
-export const ApplicationCatalog: React.FC<ApplicationCatalogProps> = ({ onSelectType }) => {
+export const ApplicationCatalog: React.FC<ApplicationCatalogProps> = ({ onSelectType, onStartCustom }) => {
   const { applicationTypes } = useApplyEaseStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -106,6 +107,33 @@ export const ApplicationCatalog: React.FC<ApplicationCatalogProps> = ({ onSelect
           </button>
         ))}
       </div>
+
+      {/* Write-your-own application — the fastest route to a custom request */}
+      <button
+        onClick={onStartCustom}
+        className="w-full text-left rounded-xl border border-[#172b50]/20 bg-gradient-to-r from-[#172b50] to-[#23406f] p-5 shadow-sm hover:shadow-md transition-all group"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-11 h-11 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-white/60">
+              Can&apos;t find your service?
+            </p>
+            <h3 className="text-base font-semibold text-white mt-0.5">
+              Write your own application
+            </h3>
+            <p className="text-xs text-white/70 mt-1 leading-relaxed">
+              Describe what you need, attach supporting documents, and choose whose signature is required —
+              it is routed to them in the order you pick.
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-white shrink-0 self-center">
+            Start <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+      </button>
 
       {/* Grid of Available Application Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

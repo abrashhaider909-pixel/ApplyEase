@@ -104,7 +104,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         { id: 'p-doc', group: 'Pages', label: 'Document Designer', icon: <FileText className="w-4 h-4" />, run: () => go('admin-doc-designer') },
         { id: 'p-sig', group: 'Pages', label: 'Signatures & Official Seals', icon: <PenTool className="w-4 h-4" />, run: () => go('admin-signatures') },
         { id: 'p-users', group: 'Pages', label: 'User & Account Provisioning', icon: <Users className="w-4 h-4" />, run: () => go('admin-users') },
-        { id: 'p-audit', group: 'Pages', label: 'Audit Trails', icon: <ScrollText className="w-4 h-4" />, run: () => go('admin-audit-logs') }
+        { id: 'p-audit', group: 'Pages', label: 'Audit Trails', icon: <ScrollText className="w-4 h-4" />, run: () => go('admin-audit-logs') },
+        { id: 'p-sla', group: 'Pages', label: 'Faculty SLA Compliance', icon: <ScrollText className="w-4 h-4" />, run: () => go('admin-sla-report') }
       );
       actions.push(
         {

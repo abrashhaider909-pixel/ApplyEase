@@ -14,6 +14,7 @@ import { ChatAssistant } from './components/common/ChatAssistant';
 import { StudentDashboard } from './components/student/StudentDashboard';
 import { ApplicationCatalog } from './components/student/ApplicationCatalog';
 import { DynamicApplicationForm } from './components/student/DynamicApplicationForm';
+import { CustomApplicationForm } from './components/student/CustomApplicationForm';
 import { ApplicationTracker } from './components/student/ApplicationTracker';
 import { StaffDashboard } from './components/staff/StaffDashboard';
 import { ApplicationReviewPane } from './components/staff/ApplicationReviewPane';
@@ -46,6 +47,9 @@ const UserManager = lazy(() =>
 );
 const AuditLogsView = lazy(() =>
   import('./components/admin/AuditLogsView').then(m => ({ default: m.AuditLogsView }))
+);
+const SlaComplianceReport = lazy(() =>
+  import('./components/admin/SlaComplianceReport').then(m => ({ default: m.SlaComplianceReport }))
 );
 
 /** Skeleton shown while a code-split workspace loads. */
@@ -88,6 +92,18 @@ export default function App() {
     ? applications.find(app => app.id === selectedApp.id) ?? selectedApp
     : null;
   const [verificationInitialCode, setVerificationInitialCode] = useState<string>('');
+  const [pendingOpenRef, setPendingOpenRef] = useState<string | null>(null);
+
+  // A freshly submitted application exists in the store before this component
+  // re-renders, so open it as soon as it appears in the list.
+  useEffect(() => {
+    if (!pendingOpenRef) return;
+    const created = applications.find(app => app.referenceNumber === pendingOpenRef);
+    if (!created) return;
+    setSelectedApp(created);
+    setCurrentTab('application-tracker');
+    setPendingOpenRef(null);
+  }, [applications, pendingOpenRef]);
   const [showPublicVerify, setShowPublicVerify] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -131,6 +147,7 @@ export default function App() {
       if (
         currentTab === 'student-dashboard' ||
         currentTab === 'application-catalog' ||
+        currentTab === 'custom-application' ||
         currentTab === 'new-application' ||
         currentTab.startsWith('admin-')
       ) {
@@ -170,7 +187,9 @@ export default function App() {
       setSelectedApp(created);
       setCurrentTab('application-tracker');
     } else {
-      setCurrentTab('student-dashboard');
+      // The store has the new record, but this render's snapshot may not: remember
+      // the reference and open it as soon as the list refreshes.
+      setPendingOpenRef(ref);
     }
   };
 
@@ -198,7 +217,7 @@ export default function App() {
           </main>
 
           <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-            ApplyEase • Apex State University Records Office
+            ApplyEase • MCS Records Office
           </footer>
         </div>
       );
@@ -242,7 +261,7 @@ export default function App() {
         </main>
 
         <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-          ApplyEase • Apex State University Records Office
+          ApplyEase • MCS Records Office
         </footer>
       </div>
     );
@@ -292,7 +311,17 @@ export default function App() {
         )}
 
         {currentTab === 'application-catalog' && (
-          <ApplicationCatalog onSelectType={handleStartApplication} />
+          <ApplicationCatalog
+            onSelectType={handleStartApplication}
+            onStartCustom={() => setCurrentTab('custom-application')}
+          />
+        )}
+
+        {currentTab === 'custom-application' && (
+          <CustomApplicationForm
+            onCancel={() => setCurrentTab('application-catalog')}
+            onSubmitted={handleApplicationSubmitted}
+          />
         )}
 
         {currentTab === 'new-application' && selectedAppTypeToApply && (
@@ -368,6 +397,8 @@ export default function App() {
 
         {currentTab === 'admin-audit-logs' && <AuditLogsView />}
 
+        {currentTab === 'admin-sla-report' && <SlaComplianceReport />}
+
         {/* PUBLIC / UNIVERSAL VERIFICATION */}
         {currentTab === 'verify-document' && (
           <DocumentVerificationView
@@ -391,7 +422,7 @@ export default function App() {
           <div className="flex items-center gap-4">
             <span className="font-semibold text-slate-700">Apply. Track. Approve. Simplify.</span>
             <span className="text-slate-300">·</span>
-            <span>Apex State University Records Office</span>
+            <span>MCS Records Office</span>
           </div>
         </div>
       </footer>

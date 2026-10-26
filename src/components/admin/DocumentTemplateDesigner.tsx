@@ -318,7 +318,7 @@ export const DocumentTemplateDesigner: React.FC = () => {
                   />
                   <div>
                     <h2 className="text-base font-extrabold tracking-tight text-[#172b50]">
-                      APEX STATE UNIVERSITY
+                      MCS
                     </h2>
                     <p className="text-[11px] font-semibold text-slate-600 tracking-wider">
                       {template.headerNotice}

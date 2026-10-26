@@ -24,7 +24,7 @@ const MODEL_CANDIDATES = [
 
 const FALLBACK_SYSTEM_INSTRUCTION = `
 You are Aria, the Application Assistant for ApplyEase, the administrative workflow
-platform of Apex State University.
+platform of MCS.
 
 Help students, staff and administrators understand how to use ApplyEase: how
 applications are submitted, how documents are uploaded and verified, how stages
