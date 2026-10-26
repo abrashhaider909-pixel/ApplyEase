@@ -30,9 +30,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onPublicVerifyClick }) => 
     setError(null);
     setIsLoading(true);
 
-    // Small delay for UX continuity; real verification happens below.
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
     try {
       const result = await authenticate(email, password);
       if (!result.ok) {

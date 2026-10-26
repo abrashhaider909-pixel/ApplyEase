@@ -77,7 +77,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [mobileOpen]);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <>
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
         {/* Zone 1: Brand */}
         <div className="flex items-center gap-3 shrink-0">
@@ -160,14 +161,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
+      </header>
+
       {/* Mobile navigation sheet */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Navigation">
+        <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Navigation">
           <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-[overlay-in_120ms_ease-out]"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl flex flex-col animate-[palette-in_140ms_ease-out]">
+          <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white opacity-100 shadow-2xl border-l border-slate-200 flex flex-col animate-[sheet-in_140ms_ease-out]">
             <div className="flex items-center justify-between px-5 h-16 border-b border-slate-200">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Menu</span>
               <button
@@ -231,6 +234,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 };

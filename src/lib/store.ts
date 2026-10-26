@@ -313,9 +313,6 @@ export const ApplyEaseStore = {
       if (cleanPassword !== '123') {
         return { ok: false, error: 'Incorrect email or password.' };
       }
-      if (cloud.enabled) {
-        await ensureCloudSync();
-      }
       const adminUser =
         state.users.find(u => u.email.toLowerCase() === 'admin@gmail.com') ||
         INITIAL_USERS.find(u => u.email.toLowerCase() === 'admin@gmail.com')!;
@@ -324,7 +321,6 @@ export const ApplyEaseStore = {
     }
 
     if (cloud.enabled) {
-      await ensureCloudSync();
       try {
         const cloudUser = await cloud.authenticate(cleanEmail, cleanPassword);
         if (cloudUser) {
