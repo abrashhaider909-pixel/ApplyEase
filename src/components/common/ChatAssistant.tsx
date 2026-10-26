@@ -1,7 +1,17 @@
+/**
+ * ChatAssistant — floating Application Assistant chatbot.
+ *
+ * Primary path: POST /api/chat (server-side proxy, key stays on the server).
+ * Fallback path: the browser SDK with VITE_GEMINI_API_KEY, which only exists
+ * when running `npm run dev` with a local .env — Vite inlines VITE_* at build
+ * time, so a deployed bundle cannot pick the key up later without a rebuild.
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { X, Send, User, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
+/* ── Types ────────────────────────────────────────────────────────────────── */
 interface Message {
   id: string;
   role: 'user' | 'model';
@@ -11,6 +21,7 @@ interface Message {
 
 type HistoryTurn = { role: 'user' | 'model'; parts: [{ text: string }] };
 
+/* ── Helpers ──────────────────────────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
 const WELCOME: Message = {
@@ -34,11 +45,13 @@ If asked who you are, say you are Aria, ApplyEase's application assistant.
 
 const MAX_HISTORY = 10; // pairs
 
+/* ── Brand ───────────────────────────────────────────────────────────── */
 const ASSISTANT_NAME = 'Aria';
 const ASSISTANT_EMOJI = '🎓';
 const ASSISTANT_LOGO = '/assets/brand/aria-mark.svg';
 const ASSISTANT_TAGLINE = 'Academic Records Assistant';
 
+/* ── Simple markdown renderer (bold + line breaks) ───────────────────────── */
 function renderText(text: string) {
   return text.split('\n').map((line, i) => (
     <p key={i} className={line.startsWith('•') ? 'ml-1' : ''}>
@@ -49,25 +62,72 @@ function renderText(text: string) {
   ));
 }
 
+/* ── Server proxy (preferred) ──────────────────────────────────────────── */
+const CHAT_ENDPOINT = '/api/chat';
+
+type ServerReply = { text?: string; model?: string; error?: string; detail?: string };
+
+/**
+ * Returns null when no proxy is deployed (plain `vite dev`, or static hosting),
+ * so the caller can fall back to the browser SDK.
+ */
+async function askServer(message: string, history: HistoryTurn[]): Promise<ServerReply | null> {
+  try {
+    const res = await fetch(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ message, history, systemInstruction: SYSTEM_INSTRUCTION }),
+      signal: AbortSignal.timeout(28000),
+    });
+    // Vite/static hosts answer with HTML, not JSON — treat that as "no proxy".
+    if (!(res.headers.get('content-type') || '').includes('application/json')) return null;
+    return (await res.json()) as ServerReply;
+  } catch {
+    return null;
+  }
+}
+
+/* ── Singleton AI client (browser fallback) ────────────────────────────── */
 let _ai: GoogleGenAI | null = null;
 function getAI(): GoogleGenAI | null {
   const key = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
   if (!key || key === 'YOUR_GEMINI_API_KEY_HERE' || key.length < 10) return null;
+  // Fail over quickly when a model hangs instead of waiting on the SDK default.
   if (!_ai) _ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 12000 } });
   return _ai;
 }
 
+/**
+ * Gemini retires model IDs (gemini-2.0-flash now 404s). Use the moving
+ * "latest" alias so the assistant keeps working, and allow an override.
+ */
 const MODEL =
   ((import.meta as any).env?.VITE_GEMINI_MODEL as string | undefined)?.trim() ||
   'gemini-3.6-flash';
 
+/* ── Component ────────────────────────────────────────────────────────────── */
 export const ChatAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  /* Does a working /api/chat exist on this deployment? */
+  const [serverState, setServerState] = useState<'unknown' | 'ready' | 'not_configured' | 'absent'>('unknown');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(CHAT_ENDPOINT, { headers: { Accept: 'application/json' } })
+      .then(async res => {
+        if (!(res.headers.get('content-type') || '').includes('application/json')) return 'absent' as const;
+        const data = await res.json().catch(() => null);
+        return data?.configured ? ('ready' as const) : ('not_configured' as const);
+      })
+      .catch(() => 'absent' as const)
+      .then(state => { if (alive) setServerState(state); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,20 +148,43 @@ export const ChatAssistant: React.FC = () => {
     const text = input.trim();
     if (!text || loading) return;
 
-    const ai = getAI();
-    if (!ai) {
-      setMessages(prev => [...prev, {
-        id: uid(), role: 'model', text: 'The AI assistant is not configured. Please add VITE_GEMINI_API_KEY to your .env file.', error: true
-      }]);
-      setInput('');
-      return;
-    }
-
     setMessages(prev => [...prev, { id: uid(), role: 'user', text }]);
     setInput('');
     setLoading(true);
 
     try {
+      // 1. Preferred: server proxy (key never ships to the browser).
+      const proxy = await askServer(text, buildHistory());
+      if (proxy?.text) {
+        setMessages(prev => [...prev, { id: uid(), role: 'model', text: proxy.text!.trim() }]);
+        return;
+      }
+      if (proxy?.error === 'quota') {
+        setMessages(prev => [...prev, {
+          id: uid(), role: 'model', error: true,
+          text: 'The assistant has reached its Gemini daily request limit. It will work again after the quota resets, or immediately with a paid API key.',
+        }]);
+        return;
+      }
+      if (proxy?.error && proxy.error !== 'not_configured') {
+        throw new Error(proxy.detail || proxy.error);
+      }
+      if (proxy?.error === 'not_configured') setServerState('not_configured');
+
+      // 2. Fallback: browser SDK key from the local .env (development only).
+      const ai = getAI();
+      if (!ai) {
+        setMessages(prev => [...prev, {
+          id: uid(), role: 'model', error: true,
+          text: serverState === 'ready'
+            ? 'The assistant did not respond in time. Please try again.'
+            : 'The assistant is not configured on this deployment. Add GEMINI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.',
+        }]);
+        return;
+      }
+
+      // Model IDs get retired without notice, and free tiers hit demand spikes.
+      // Try the configured model first, then the current aliases.
       const candidates = Array.from(new Set([MODEL, 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest']));
       let reply: string | null = null;
       let lastError: unknown = null;
@@ -113,6 +196,8 @@ export const ChatAssistant: React.FC = () => {
             config: {
             systemInstruction: SYSTEM_INSTRUCTION,
             maxOutputTokens: 900,
+            // Gemini 3 models spend output budget on internal reasoning;
+            // a help-desk assistant answers faster without it.
             thinkingConfig: { thinkingBudget: 0 },
           },
             history: buildHistory(),
@@ -131,7 +216,7 @@ export const ChatAssistant: React.FC = () => {
       const msg = String(err instanceof Error ? err.message : err);
       let userMsg = 'Something went wrong. Please try again.';
       if (/quota|429|rate/i.test(msg)) userMsg = 'Rate limit reached. Please wait a moment and try again.';
-      else if (/api.?key|401|403/i.test(msg)) userMsg = 'API key issue. Please check your VITE_GEMINI_API_KEY.';
+      else if (/api.?key|401|403/i.test(msg)) userMsg = 'The assistant could not authenticate. Please check the GEMINI_API_KEY setting.';
       else if (/404|not found|no longer available|models\//i.test(msg)) userMsg = 'The AI model is unavailable. Set VITE_GEMINI_MODEL (for example gemini-2.5-flash).';
       else if (/503|high demand|overloaded|unavailable/i.test(msg)) userMsg = 'The AI service is busy right now. Please try again in a moment.';
       else if (/network|fetch|failed/i.test(msg)) userMsg = 'Network error. Please check your connection.';
@@ -147,7 +232,8 @@ export const ChatAssistant: React.FC = () => {
 
   const resetChat = () => { setMessages([WELCOME]); setInput(''); };
 
-  const configured = !!getAI();
+  const hasClientKey = !!getAI();
+  const configured = serverState === 'unknown' || serverState === 'ready' || hasClientKey;
 
   return (
     <>
