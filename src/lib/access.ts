@@ -16,7 +16,7 @@
 import { Application, SignatureAsset, StampAsset, UserProfile } from '../types';
 
 /** Titles that carry signing authority for their department. */
-const SIGNING_TITLES = /head of department|department head|chief hostel warden|university registrar|senior accounts officer|dean of|director of/i;
+const SIGNING_TITLES = /head of department|department head|chief hostel warden|university registrar|^registrar$|senior accounts officer|dean of|director of/i;
 
 /** Does this designation carry signature/seal authority? */
 export function isSigningTitle(title?: string): boolean {

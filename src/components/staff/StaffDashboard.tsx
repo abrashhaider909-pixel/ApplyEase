@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
 import { canReviewRecord, isSigningOfficer, canApplySignature, canSignStage } from '../../lib/access';
-import { isCustomApplication } from '../../lib/customApplication';
 import { Application } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
 import { evaluateStageSLA } from '../../lib/slaEngine';
@@ -71,9 +70,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     // act on is confusing and misleading.
     const stageNeedsSeal = currentStage.requiresSignature || currentStage.requiresStamp;
     if (stageNeedsSeal && !isAdmin) {
-      // Student-created applications route directly to the faculty member they
-      // selected. Honor that explicit assignment without changing catalog forms.
-      if (isCustomApplication(app)) return canSignStage(currentUser, currentStage);
+      // A directly assigned signer may have a slightly different department
+      // label than the workflow template. Honor the explicit assignment using
+      // the same authority check used when they submit the decision.
+      if (isDirectUser) return canSignStage(currentUser, currentStage);
       return canApplySignature(currentUser, currentStage.assignedDepartment);
     }
 
