@@ -34,13 +34,20 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   // Filter tasks assigned to current staff member or their department
   const assignedApps = applications.filter((app) => {
     if (showCompletedOnly) {
-      // Closed student records belong to the Registrar and the Head of the
-      // student's own department. Anything still moving that this officer
-      // handled stays visible to them as read-only history.
+      // Keep an officer's own decision history visible after the application
+      // closes. Other closed records remain limited to roles allowed to review them.
+      const handledByCurrentUser = app.stageInstances.some(
+        stage => stage.actionTakenBy === currentUser.name
+      ) || app.timeline.some(event =>
+        event.actorName === currentUser.name &&
+        ['approval', 'signature', 'rejection', 'correction_request'].includes(event.type)
+      );
+      if (handledByCurrentUser) return true;
+
       const closed =
         app.status === 'completed' || app.status === 'rejected' || app.status === 'cancelled';
       if (closed) return canReviewRecord(currentUser, app);
-      return app.stageInstances.some(stage => stage.actionTakenBy === currentUser.name);
+      return false;
     }
 
     if (app.status === 'completed' || app.status === 'rejected' || app.status === 'draft') {
@@ -103,6 +110,9 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       return false;
     }
 
+    // Action-queue status filters must not hide a staff member's decision history.
+    if (showCompletedOnly) return true;
+
     if (statusFilter === 'overdue') {
       return sla?.isOverdue;
     }
@@ -117,7 +127,9 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
 
   const handleRunSlaEngine = () => {
     const res = triggerSLACheck();
-    setSlaRunResult(`Checked ${res.checkedCount} active tasks. Generated ${res.warningsGenerated} warnings, ${res.escalationsTriggered} escalations.`);
+    setSlaRunResult(
+      `Checked ${res.checkedCount} active tasks across all departments (${pendingCount} assigned to you). Generated ${res.warningsGenerated} warnings, ${res.escalationsTriggered} escalations.`
+    );
     setTimeout(() => setSlaRunResult(null), 5000);
   };
 
@@ -148,7 +160,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           <button
             onClick={handleRunSlaEngine}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
-            title="Check every open stage against its deadline and raise warnings or escalations"
+            title="Check every open stage across all departments against its deadline and raise warnings or escalations"
           >
             <Play className="w-3.5 h-3.5 text-[#172b50]" />
             <span>Run deadline check</span>
@@ -218,7 +230,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {/* Controls */}
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600 overflow-x-auto">
+          {!showCompletedOnly && (
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600 overflow-x-auto">
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
@@ -259,7 +272,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             >
               Needs Signature ({signatureRequiredCount})
             </button>
-          </div>
+            </div>
+          )}
 
           <div className="relative w-full sm:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
