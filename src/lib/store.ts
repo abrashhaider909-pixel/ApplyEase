@@ -239,6 +239,16 @@ async function hydrateFromCloud(silent = false): Promise<boolean> {
   try {
     const seeded = await seedIfEmpty();
     const data = await pullAll();
+    // Existing Supabase projects can have profiles but an empty or partially
+    // populated applications table. Preserve locally cached records in that
+    // case so an already-routed task is not silently removed from staff queues.
+    const cloudApplicationIds = new Set(data.applications.map(app => app.id));
+    const localOnlyApplications = state.applications.filter(app => !cloudApplicationIds.has(app.id));
+    if (localOnlyApplications.length) {
+      data.applications = [...data.applications, ...localOnlyApplications];
+      markSelfPush();
+      await cloud.pushApplications(localOnlyApplications);
+    }
     applyCloudData(data);
     state.cloudStatus = 'online';
     state.cloudIssue = 'none';
