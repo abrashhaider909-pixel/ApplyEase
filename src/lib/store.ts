@@ -137,6 +137,8 @@ let cloudSyncStarted = false;
 let isPulling = false;
 let lastSelfPushAt = 0;
 let lastHydrateAttemptAt = 0;
+let cloudRefreshQueued = false;
+let cloudRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let warnedMissingConfig = false;
 let unsubscribeRealtime: (() => void) | null = null;
 
@@ -158,6 +160,31 @@ function markSelfPush() {
 
 function cloudWritable() {
   return cloud.enabled && state.cloudStatus !== 'offline';
+}
+
+function drainQueuedCloudRefresh() {
+  if (!cloudRefreshQueued || isPulling || cloudRefreshTimer) return;
+  const waitMs = Math.max(0, lastSelfPushAt + 1500 - Date.now());
+  cloudRefreshTimer = setTimeout(() => {
+    cloudRefreshTimer = null;
+    if (!cloudRefreshQueued) return;
+    if (isPulling) return;
+    if (Date.now() - lastSelfPushAt < 1500) {
+      drainQueuedCloudRefresh();
+      return;
+    }
+    cloudRefreshQueued = false;
+    void hydrateFromCloud(true).then(() => drainQueuedCloudRefresh());
+  }, waitMs);
+}
+
+function requestCloudRefresh() {
+  if (isPulling || Date.now() - lastSelfPushAt < 1500) {
+    cloudRefreshQueued = true;
+    drainQueuedCloudRefresh();
+    return;
+  }
+  void hydrateFromCloud(true).then(() => drainQueuedCloudRefresh());
 }
 
 function applyCloudData(data: CloudData) {
@@ -219,6 +246,7 @@ async function hydrateFromCloud(silent = false): Promise<boolean> {
     state.cloudIssue = 'none';
     isPulling = false;
     notifyListeners();
+    drainQueuedCloudRefresh();
     if (seeded) {
       toast('success', 'Supabase connected', 'Your cloud database was empty — initial platform data has been uploaded.');
     }
@@ -228,6 +256,7 @@ async function hydrateFromCloud(silent = false): Promise<boolean> {
     state.cloudStatus = 'offline';
     isPulling = false;
     notifyListeners();
+    drainQueuedCloudRefresh();
     const message = String(e?.message || '');
     const schemaMissing = /could not find the table|does not exist|schema cache/i.test(message);
     state.cloudIssue = schemaMissing ? 'schema' : 'network';
@@ -273,9 +302,9 @@ async function ensureCloudSync(): Promise<boolean> {
     unsubscribeRealtime?.();
     try {
       unsubscribeRealtime = subscribeToChanges(() => {
-        // Skip echoes of our own recent writes; pull everything else live.
-        if (isPulling || Date.now() - lastSelfPushAt < 1500) return;
-        void hydrateFromCloud(true);
+        // Coalesce nearby row events, but never lose an update arriving during
+        // a pull or while a local write is still settling.
+        requestCloudRefresh();
       });
     } catch (error) {
       // Realtime is a convenience; never let it fail a sign-in.
