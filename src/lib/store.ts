@@ -30,6 +30,7 @@ import {
   INITIAL_NOTIFICATIONS
 } from './constants';
 import { addBusinessHours, runSLASchedulerCheck } from './slaEngine';
+import { mergeCloudApplications } from './applicationSync';
 import { calculateDocumentHash } from './pdfGenerator';
 import { buildIssuedDocumentPdf } from './issuedDocument';
 import { PDF_RENDER_VERSION } from './officialPdf';
@@ -242,10 +243,10 @@ async function hydrateFromCloud(silent = false): Promise<boolean> {
     // Existing Supabase projects can have profiles but an empty or partially
     // populated applications table. Preserve locally cached records in that
     // case so an already-routed task is not silently removed from staff queues.
-    const cloudApplicationIds = new Set(data.applications.map(app => app.id));
-    const localOnlyApplications = state.applications.filter(app => !cloudApplicationIds.has(app.id));
+    const mergedApplications = mergeCloudApplications(data.applications, state.applications);
+    const localOnlyApplications = mergedApplications.localOnlyApplications;
     if (localOnlyApplications.length) {
-      data.applications = [...data.applications, ...localOnlyApplications];
+      data.applications = mergedApplications.applications;
       markSelfPush();
       await cloud.pushApplications(localOnlyApplications);
     }
