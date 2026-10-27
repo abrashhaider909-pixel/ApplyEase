@@ -103,19 +103,17 @@ function notifyListeners() {
   listeners.forEach(fn => fn());
 }
 
-// A restored session would skip the login page, so drop the stored flag.
-try {
-  localStorage.removeItem('applyease_is_authenticated');
-} catch {
-  /* ignore */
-}
+const restoredUsers = safeLoad<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+const restoredCurrentUser = safeLoad<UserProfile>(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
+const restoredAccount = restoredUsers.find(user => user.id === restoredCurrentUser.id);
 
 // State container
 let state = {
-  // Always start signed out: opening the site must land on the login page.
-  isAuthenticated: false,
-  currentUser: safeLoad<UserProfile>(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]),
-  users: safeLoad<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_USERS),
+  // Restore the session across refreshes; explicit logout clears this flag.
+  isAuthenticated: safeLoad<boolean>(STORAGE_KEYS.IS_AUTHENTICATED, false) &&
+    Boolean(restoredAccount?.active && restoredCurrentUser.active),
+  currentUser: restoredAccount ?? restoredCurrentUser,
+  users: restoredUsers,
   applicationTypes: safeLoad<ApplicationType[]>(STORAGE_KEYS.APPLICATION_TYPES, INITIAL_APPLICATION_TYPES),
   applications: safeLoad<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS),
   signatures: safeLoad<SignatureAsset[]>(STORAGE_KEYS.SIGNATURES, INITIAL_SIGNATURES),
