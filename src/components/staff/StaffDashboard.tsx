@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
-import { canReviewRecord, isSigningOfficer, canApplySignature } from '../../lib/access';
+import { canReviewRecord, isSigningOfficer, canApplySignature, canSignStage } from '../../lib/access';
+import { isCustomApplication } from '../../lib/customApplication';
 import { Application } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
 import { evaluateStageSLA } from '../../lib/slaEngine';
@@ -70,6 +71,9 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     // act on is confusing and misleading.
     const stageNeedsSeal = currentStage.requiresSignature || currentStage.requiresStamp;
     if (stageNeedsSeal && !isAdmin) {
+      // Student-created applications route directly to the faculty member they
+      // selected. Honor that explicit assignment without changing catalog forms.
+      if (isCustomApplication(app)) return canSignStage(currentUser, currentStage);
       return canApplySignature(currentUser, currentStage.assignedDepartment);
     }
 
@@ -126,10 +130,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   });
 
   const handleRunSlaEngine = () => {
-    const res = triggerSLACheck();
-    setSlaRunResult(
-      `Checked ${res.checkedCount} active tasks across all departments (${pendingCount} assigned to you). Generated ${res.warningsGenerated} warnings, ${res.escalationsTriggered} escalations.`
-    );
+    triggerSLACheck();
+    setSlaRunResult('Deadline check completed for your task queue.');
     setTimeout(() => setSlaRunResult(null), 5000);
   };
 
@@ -160,7 +162,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           <button
             onClick={handleRunSlaEngine}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
-            title="Check every open stage across all departments against its deadline and raise warnings or escalations"
+            title="Check active application deadlines"
           >
             <Play className="w-3.5 h-3.5 text-[#172b50]" />
             <span>Run deadline check</span>
