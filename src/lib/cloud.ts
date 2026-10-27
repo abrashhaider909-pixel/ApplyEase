@@ -338,6 +338,40 @@ export async function pullAll(): Promise<CloudData> {
   return { users, applicationTypes, applications, signatures, stamps, auditLogs, notifications };
 }
 
+/** Look up one issued document for the public QR/code verifier. */
+export async function lookupIssuedApplication(verificationCode: string): Promise<Application | null> {
+  if (!verificationCode.trim() || !isCloudConfigured()) return null;
+  const query = verificationCode.trim().toUpperCase();
+  const client = db();
+  const { data: referenceData, error: referenceError } = await client
+    .from('applications')
+    .select('*')
+    .eq('reference_number', query)
+    .eq('status', 'completed')
+    .not('issued_document', 'is', null)
+    .maybeSingle();
+  if (referenceError) throw referenceError;
+  if (referenceData) return mapApplication.fromRow(referenceData);
+
+  const { data, error } = await client
+    .from('applications')
+    .select('*')
+    .contains('issued_document', { verificationCode: query })
+    .eq('status', 'completed')
+    .maybeSingle();
+  if (error) throw error;
+  if (data) return mapApplication.fromRow(data);
+
+  const { data: documentData, error: documentError } = await client
+    .from('applications')
+    .select('*')
+    .contains('issued_document', { documentNumber: query })
+    .eq('status', 'completed')
+    .maybeSingle();
+  if (documentError) throw documentError;
+  return documentData ? mapApplication.fromRow(documentData) : null;
+}
+
 /**
  * First-run convenience: when the cloud database is completely empty, upload
  * the built-in seed dataset so a fresh Supabase project is instantly usable.

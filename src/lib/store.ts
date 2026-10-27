@@ -176,7 +176,15 @@ function applyCloudData(data: CloudData) {
   state.signatures = data.signatures.length ? data.signatures : state.signatures;
   state.stamps = data.stamps.length ? data.stamps : state.stamps;
   state.auditLogs = data.auditLogs;
-  state.notifications = data.notifications;
+  // A cloud pull can race an in-flight read-status upsert. Read is monotonic
+  // for a notification, so retain a locally saved "read" state if the cloud
+  // response still has the older unread value.
+  const localNotificationsById = new Map(state.notifications.map(n => [n.id, n]));
+  state.notifications = data.notifications.map(notification =>
+    localNotificationsById.get(notification.id)?.read && !notification.read
+      ? { ...notification, read: true }
+      : notification
+  );
 
   // Keep the signed-in session, but refresh the profile from cloud truth
   const freshProfile = state.users.find(u => u.id === state.currentUser.id);

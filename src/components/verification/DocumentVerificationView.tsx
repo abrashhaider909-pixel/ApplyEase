@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useApplyEaseStore } from '../../lib/store';
+import { lookupIssuedApplication } from '../../lib/cloud';
+import { Application } from '../../types';
 import {
   ShieldCheck,
   Search,
@@ -26,11 +28,13 @@ export const DocumentVerificationView: React.FC<DocumentVerificationViewProps> =
   const { applications } = useApplyEaseStore();
   const [searchQuery, setSearchQuery] = useState(initialCode);
   const [searched, setSearched] = useState(Boolean(initialCode));
+  const [cloudMatch, setCloudMatch] = useState<Application | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const cleanQuery = searchQuery.trim().toUpperCase();
 
   // Search applications by reference number or verification code
-  const matchedApp = applications.find(
+  const localMatch = applications.find(
     (app) =>
       (app.referenceNumber.toUpperCase() === cleanQuery ||
         app.issuedDocument?.verificationCode.toUpperCase() === cleanQuery ||
@@ -39,10 +43,30 @@ export const DocumentVerificationView: React.FC<DocumentVerificationViewProps> =
       app.issuedDocument
   );
 
+  const matchedApp = localMatch ?? cloudMatch;
+
+  const searchCloud = async (query: string) => {
+    setCloudMatch(null);
+    if (!query || localMatch) return;
+    setIsSearching(true);
+    try {
+      setCloudMatch(await lookupIssuedApplication(query));
+    } catch (error) {
+      console.warn('[ApplyEase Verification] Cloud lookup failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (initialCode.trim()) void searchCloud(initialCode.trim().toUpperCase());
+  }, [initialCode]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setSearched(true);
+    void searchCloud(cleanQuery);
   };
 
   return (
@@ -77,14 +101,14 @@ export const DocumentVerificationView: React.FC<DocumentVerificationViewProps> =
             type="submit"
             className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-white bg-[#172b50] hover:bg-[#1f3763] rounded-xl transition-colors shadow-xs whitespace-nowrap"
           >
-            Verify Credential
+            {isSearching ? 'Searching…' : 'Verify Credential'}
           </button>
         </form>
 
       </div>
 
       {/* Verification Result Card */}
-      {searched && (
+      {searched && !isSearching && (
         <div>
           {matchedApp && matchedApp.issuedDocument ? (
             <div className="bg-white rounded-2xl border border-emerald-300 p-6 shadow-md space-y-6 animate-in fade-in">
